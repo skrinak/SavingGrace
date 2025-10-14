@@ -34,6 +34,16 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+# PYTHON & UV
+# =============================================================================
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
 # Package manager lock files (keep or remove based on preference)
 # package-lock.json
 # yarn.lock
