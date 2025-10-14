@@ -18,16 +18,18 @@ SavingGrace is a production-ready food donation tracking and distribution web ap
 
 ### Backend (AWS Serverless)
 - **API Gateway**: REST API (sole interface, regional mode)
-- **Lambda**: Node.js or Python, one function per endpoint
+- **Lambda**: Python 3.11+ ONLY, one function per endpoint
 - **DynamoDB**: Primary database with GSIs for query patterns
 - **Cognito**: User authentication and authorization
 - **S3**: Document and receipt storage
 - **CloudWatch**: Logging and monitoring
 - **IAM**: Role-based access control
+- **Region**: us-west-2 ONLY (all AWS resources)
 
 ### Infrastructure
 - CloudFormation or CDK for IaC
 - Separate stacks: dev, staging, production
+- ALL resources deployed to us-west-2
 
 ## Development Commands
 
@@ -51,12 +53,12 @@ npm run lint
 
 ### Backend Development
 ```bash
-# Install Lambda dependencies
+# Install Lambda dependencies (Python only)
 cd functions/<function-name>
-npm install  # or pip install -r requirements.txt for Python
+pip install -r requirements.txt -t .
 
 # Run unit tests
-npm test
+pytest
 
 # Package Lambda function
 zip -r function.zip .
@@ -94,10 +96,11 @@ npm run test:load
 
 ## Architecture Principles
 
-### AWS accounts 
+### AWS accounts
 - All frontend react code must use the 563334150189 AWS account
 - All backend infrastructure must use the 921212210452 AWS account
 - Secrets are managed in .env
+- **ALL AWS resources MUST be deployed to us-west-2 region ONLY**
 
 ### Backend Architecture Rules
 
@@ -115,14 +118,15 @@ npm run test:load
    - Enable CloudWatch logging
    - Enable request caching for GET endpoints (5-min TTL)
 
-4. **Lambda Best Practices**:
-   - Use Lambda Layers for shared code (DB clients, utilities)
+4. **Lambda Best Practices** (Python 3.11+ ONLY):
+   - Use Lambda Layers for shared code (boto3 clients, utilities)
    - Environment variables from Systems Manager Parameter Store
-   - Structured JSON logging
+   - Structured JSON logging (use Python logging module)
    - AWS X-Ray tracing enabled
-   - Input validation on every request
+   - Input validation on every request (use pydantic or cerberus)
    - Proper error handling with HTTP status codes (200, 400, 401, 403, 404, 500)
    - Timeout: 30s max, Memory: 512-1024MB
+   - Runtime: python3.11 or python3.12
 
 5. **DynamoDB Patterns**:
    - Single-table design with composite keys (PK, SK)
@@ -238,11 +242,15 @@ npm run test:load
 - User role stored in Cognito custom attribute: `custom:role`
 - Roles: Admin, Donor Coordinator, Distribution Manager, Volunteer, Read-Only
 - Check role in Lambda before processing:
-  ```javascript
-  const userRole = event.requestContext.authorizer.claims['custom:role'];
-  if (!['Admin', 'DonorCoordinator'].includes(userRole)) {
-    return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden' }) };
-  }
+  ```python
+  import json
+
+  user_role = event['requestContext']['authorizer']['claims']['custom:role']
+  if user_role not in ['Admin', 'DonorCoordinator']:
+      return {
+          'statusCode': 403,
+          'body': json.dumps({'success': False, 'error': 'Forbidden'})
+      }
   ```
 
 ### Data Protection
@@ -342,41 +350,47 @@ npm run test:load
 ### Frontend (.env)
 ```
 VITE_API_BASE_URL=https://api.savinggrace.org/dev
-VITE_COGNITO_USER_POOL_ID=us-east-1_xxxxx
+VITE_COGNITO_USER_POOL_ID=us-west-2_xxxxx
 VITE_COGNITO_CLIENT_ID=xxxxx
-VITE_AWS_REGION=us-east-1
+VITE_AWS_REGION=us-west-2
 ```
 
 ### Lambda (from Systems Manager)
 ```
 DYNAMODB_TABLE=SavingGrace-Dev
 S3_BUCKET=savinggrace-receipts-dev
-COGNITO_USER_POOL_ID=us-east-1_xxxxx
-AWS_REGION=us-east-1
+COGNITO_USER_POOL_ID=us-west-2_xxxxx
+AWS_REGION=us-west-2
 LOG_LEVEL=INFO
 ```
 
 ## Testing Patterns
 
-### Lambda Unit Test Example
-```javascript
-// Mock DynamoDB client
-const mockDynamoDB = {
-  put: jest.fn(),
-  get: jest.fn(),
-  query: jest.fn()
-};
+### Lambda Unit Test Example (Python with pytest)
+```python
+import json
+import pytest
+from unittest.mock import Mock, patch
 
-// Test function
-test('createDonor returns 201 on success', async () => {
-  mockDynamoDB.put.mockResolvedValue({});
-  const event = {
-    body: JSON.stringify({ name: 'Test Donor', email: 'test@example.com' })
-  };
-  const response = await handler(event);
-  expect(response.statusCode).toBe(201);
-  expect(JSON.parse(response.body).success).toBe(true);
-});
+@patch('boto3.resource')
+def test_create_donor_returns_201_on_success(mock_dynamodb):
+    # Mock DynamoDB table
+    mock_table = Mock()
+    mock_dynamodb.return_value.Table.return_value = mock_table
+    mock_table.put_item.return_value = {}
+
+    # Create test event
+    event = {
+        'body': json.dumps({'name': 'Test Donor', 'email': 'test@example.com'})
+    }
+
+    # Call handler
+    response = handler(event, None)
+
+    # Assert
+    assert response['statusCode'] == 201
+    body = json.loads(response['body'])
+    assert body['success'] is True
 ```
 
 ### Frontend Component Test
@@ -407,6 +421,8 @@ test('DonorForm submits data correctly', async () => {
 - API Gateway execution logs (enable in settings)
 - DynamoDB capacity metrics (throttling)
 - Test Lambda locally with SAM CLI: `sam local invoke`
+- Use Python debugger (pdb) for local development
+- Run pytest with verbose output: `pytest -v`
 
 ### Common Issues
 - **401 Unauthorized**: Check token expiry, verify Cognito Authorizer config
@@ -415,26 +431,26 @@ test('DonorForm submits data correctly', async () => {
 - **Timeout**: Lambda taking > 30s, optimize query or increase timeout
 - **Throttling**: DynamoDB read/write capacity exceeded, enable auto-scaling
 
-## Helpful AWS CLI Commands
+## Helpful AWS CLI Commands (us-west-2 only)
 
 ```bash
 # View Lambda logs
-aws logs tail /aws/lambda/<function-name> --follow
+aws logs tail /aws/lambda/<function-name> --follow --region us-west-2
 
 # Invoke Lambda function directly
-aws lambda invoke --function-name <function-name> --payload '{"test": "data"}' response.json
+aws lambda invoke --function-name <function-name> --payload '{"test": "data"}' response.json --region us-west-2
 
 # Get API Gateway endpoint
-aws apigateway get-rest-apis --query 'items[?name==`SavingGrace`].id'
+aws apigateway get-rest-apis --query 'items[?name==`SavingGrace`].id' --region us-west-2
 
 # Update Lambda environment variable
-aws lambda update-function-configuration --function-name <function-name> --environment Variables={KEY=VALUE}
+aws lambda update-function-configuration --function-name <function-name> --environment Variables={KEY=VALUE} --region us-west-2
 
 # Create DynamoDB backup
-aws dynamodb create-backup --table-name <table-name> --backup-name <backup-name>
+aws dynamodb create-backup --table-name <table-name> --backup-name <backup-name> --region us-west-2
 
 # Get CloudWatch metrics
-aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Errors --dimensions Name=FunctionName,Value=<function-name> --start-time 2024-01-01T00:00:00Z --end-time 2024-01-02T00:00:00Z --period 3600 --statistics Sum
+aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Errors --dimensions Name=FunctionName,Value=<function-name> --start-time 2024-01-01T00:00:00Z --end-time 2024-01-02T00:00:00Z --period 3600 --statistics Sum --region us-west-2
 ```
 
 ## Project Structure
@@ -483,14 +499,14 @@ aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Errors
 ## ❌ NEVER DO THIS
 
 1.  **Create proxy servers** or use FastAPI
-2.  **Call vendor APIs directly from frontend** - ALL data must flow through Price Engine Lambdas
-3.  **Add mock data** except for debugging (delete immediately)
-4.  **Create documentation** unless explicitly requested
-5.  **Commit code** unless explicitly asked
-6.  **Add comments** unless requested
-7.  **Use different app names** (only "xact.ai")
-8.  **Skip disclaimers** on investment features
-9.  **Deploy outside us-west-2**
+2.  **Use Node.js for Lambda functions** - Python 3.11+ ONLY
+3.  **Deploy outside us-west-2** - ALL AWS resources must be in us-west-2
+4.  **Use any region other than us-west-2** - No exceptions
+5.  **Add mock data** except for debugging (delete immediately)
+6.  **Create documentation** unless explicitly requested
+7.  **Commit code** unless explicitly asked
+8.  **Add comments** unless requested
+9.  **Use different app names** (only "SavingGrace")
 10. **Remove code without dependency analysis** - Always check for helper functions, imports, and cross-references before deletion
 11. **Assume property names in API responses** - Always verify actual API structure vs frontend expectations
 12. **Create documentation in root directory** - All new .md files must go to /docs/ directory
@@ -505,14 +521,16 @@ aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Errors
 2. **Read files directly** without asking permission
 3. **Fix root causes** not symptoms
 4. **Test your changes** with existing test suites
-5. **Include disclaimers** for investment content
-6. **Route ALL price data through Price Engine Lambda** - Frontend requests → Price Engine → Vendors
+5. **Use Python 3.11+ for ALL Lambda functions** - No Node.js
+6. **Deploy ALL AWS resources to us-west-2** - No other regions
 7. **Follow existing patterns** in the codebase
-8. **Run lint/typecheck** before marking complete
+8. **Run lint/typecheck** before marking complete (pylint, black, mypy for Python)
 9. **Use CloudFormation/CDK** for all infrastructure changes (backend/infrastructure/templates/)
 10. **Ensure infrastructure is rebuildable** - templates must be complete and error-free
 11. **Analyze dependencies before removing code** - Check for helper functions, imports, type definitions
-12. **Verify API response structure** - Use console.log or debugger to check actual vs expected property names
+12. **Verify API response structure** - Use print statements or debugger to check actual vs expected property names
 13. **Test after any code removal** - Even small deletions can cause cascading failures
 14. **BEFORE CLAIMING SUCCESS: Verify actual data exists in database/system** - Never trust API success messages, always check the actual end result
+15. **Use pytest for all Python backend tests** - Not unittest or nose
+16. **Use boto3 for ALL AWS service interactions** - Direct SDK usage only
 
