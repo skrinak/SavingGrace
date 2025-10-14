@@ -10,6 +10,7 @@ from stacks.database_stack import DatabaseStack
 from stacks.storage_stack import StorageStack
 from stacks.auth_stack import AuthStack
 from stacks.api_stack import ApiStack
+from stacks.lambda_layer_stack import LambdaLayerStack
 from stacks.monitoring_stack import MonitoringStack
 
 app = cdk.App()
@@ -58,6 +59,15 @@ api_stack = ApiStack(
     environment=environment,
     user_pool=auth_stack.user_pool,
     description=f"SavingGrace API Gateway for {environment}",
+)
+
+# Lambda Layer Stack (shared utilities)
+lambda_layer_stack = LambdaLayerStack(
+    app,
+    f"SavingGrace-LambdaLayer-{environment}",
+    env=env_us_west_2,
+    environment=environment,
+    description=f"SavingGrace Lambda shared layer for {environment}",
 )
 
 # Monitoring Stack (CloudWatch dashboards, alarms)
