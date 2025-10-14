@@ -66,14 +66,17 @@ zip -r function.zip .
 
 ### Infrastructure Deployment
 ```bash
+# IMPORTANT: Always activate conda environment before AWS CLI commands
+conda activate aws
+
 # Deploy entire stack (CloudFormation)
-aws cloudformation deploy --template-file template.yaml --stack-name savinggrace-dev
+aws cloudformation deploy --template-file template.yaml --stack-name savinggrace-dev --region us-west-2
 
 # Deploy with CDK
-cdk deploy --profile dev
+cdk deploy --profile dev --region us-west-2
 
 # Deploy single Lambda function
-aws lambda update-function-code --function-name <function-name> --zip-file fileb://function.zip
+aws lambda update-function-code --function-name <function-name> --zip-file fileb://function.zip --region us-west-2
 ```
 
 ### Testing
@@ -101,6 +104,7 @@ npm run test:load
 - All backend infrastructure must use the 921212210452 AWS account
 - Secrets are managed in .env
 - **ALL AWS resources MUST be deployed to us-west-2 region ONLY**
+- **CRITICAL: Always run `conda activate aws` before ANY AWS CLI command**
 
 ### Backend Architecture Rules
 
@@ -433,7 +437,12 @@ test('DonorForm submits data correctly', async () => {
 
 ## Helpful AWS CLI Commands (us-west-2 only)
 
+**CRITICAL: ALWAYS run `conda activate aws` before any AWS CLI command**
+
 ```bash
+# Activate conda environment (REQUIRED before any aws command)
+conda activate aws
+
 # View Lambda logs
 aws logs tail /aws/lambda/<function-name> --follow --region us-west-2
 
@@ -502,35 +511,37 @@ aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Errors
 2.  **Use Node.js for Lambda functions** - Python 3.11+ ONLY
 3.  **Deploy outside us-west-2** - ALL AWS resources must be in us-west-2
 4.  **Use any region other than us-west-2** - No exceptions
-5.  **Add mock data** except for debugging (delete immediately)
-6.  **Create documentation** unless explicitly requested
-7.  **Commit code** unless explicitly asked
-8.  **Add comments** unless requested
-9.  **Use different app names** (only "SavingGrace")
-10. **Remove code without dependency analysis** - Always check for helper functions, imports, and cross-references before deletion
-11. **Assume property names in API responses** - Always verify actual API structure vs frontend expectations
-12. **Create documentation in root directory** - All new .md files must go to /docs/ directory
-13. **No shortcuts** - When debugging discover root causes, never insert mock data or create tech debt.
-14. **Never create tech debt** - when you see lint issues in the codebase, fix them now. When there's a UI or back end error, fix it now.
-15. **NEVER claim functionality works until tested and verified** - Making code changes does NOT mean the system is working. Always test and verify actual behavior before claiming success.
-16. **MANDATORY VERIFICATION PROTOCOL** - Before stating "working", "functional", "success", or "complete": (1) Run actual tests, (2) Check actual data exists, (3) Verify end-to-end functionality. NO EXCEPTIONS. 
+5.  **Run AWS CLI commands without `conda activate aws`** - ALWAYS activate conda environment first
+6.  **Add mock data** except for debugging (delete immediately)
+7.  **Create documentation** unless explicitly requested
+8.  **Commit code** unless explicitly asked
+9.  **Add comments** unless requested
+10. **Use different app names** (only "SavingGrace")
+11. **Remove code without dependency analysis** - Always check for helper functions, imports, and cross-references before deletion
+12. **Assume property names in API responses** - Always verify actual API structure vs frontend expectations
+13. **Create documentation in root directory** - All new .md files must go to /docs/ directory
+14. **No shortcuts** - When debugging discover root causes, never insert mock data or create tech debt.
+15. **Never create tech debt** - when you see lint issues in the codebase, fix them now. When there's a UI or back end error, fix it now.
+16. **NEVER claim functionality works until tested and verified** - Making code changes does NOT mean the system is working. Always test and verify actual behavior before claiming success.
+17. **MANDATORY VERIFICATION PROTOCOL** - Before stating "working", "functional", "success", or "complete": (1) Run actual tests, (2) Check actual data exists, (3) Verify end-to-end functionality. NO EXCEPTIONS. 
 
 ## ✅ ALWAYS DO THIS
 
-1. **Search before creating** new code
-2. **Read files directly** without asking permission
-3. **Fix root causes** not symptoms
-4. **Test your changes** with existing test suites
-5. **Use Python 3.11+ for ALL Lambda functions** - No Node.js
-6. **Deploy ALL AWS resources to us-west-2** - No other regions
-7. **Follow existing patterns** in the codebase
-8. **Run lint/typecheck** before marking complete (pylint, black, mypy for Python)
-9. **Use CloudFormation/CDK** for all infrastructure changes (backend/infrastructure/templates/)
-10. **Ensure infrastructure is rebuildable** - templates must be complete and error-free
-11. **Analyze dependencies before removing code** - Check for helper functions, imports, type definitions
-12. **Verify API response structure** - Use print statements or debugger to check actual vs expected property names
-13. **Test after any code removal** - Even small deletions can cause cascading failures
-14. **BEFORE CLAIMING SUCCESS: Verify actual data exists in database/system** - Never trust API success messages, always check the actual end result
-15. **Use pytest for all Python backend tests** - Not unittest or nose
-16. **Use boto3 for ALL AWS service interactions** - Direct SDK usage only
+1. **Run `conda activate aws` before ANY AWS CLI command** - Required for all aws commands
+2. **Search before creating** new code
+3. **Read files directly** without asking permission
+4. **Fix root causes** not symptoms
+5. **Test your changes** with existing test suites
+6. **Use Python 3.11+ for ALL Lambda functions** - No Node.js
+7. **Deploy ALL AWS resources to us-west-2** - No other regions
+8. **Follow existing patterns** in the codebase
+9. **Run lint/typecheck** before marking complete (pylint, black, mypy for Python)
+10. **Use CloudFormation/CDK** for all infrastructure changes (backend/infrastructure/templates/)
+11. **Ensure infrastructure is rebuildable** - templates must be complete and error-free
+12. **Analyze dependencies before removing code** - Check for helper functions, imports, type definitions
+13. **Verify API response structure** - Use print statements or debugger to check actual vs expected property names
+14. **Test after any code removal** - Even small deletions can cause cascading failures
+15. **BEFORE CLAIMING SUCCESS: Verify actual data exists in database/system** - Never trust API success messages, always check the actual end result
+16. **Use pytest for all Python backend tests** - Not unittest or nose
+17. **Use boto3 for ALL AWS service interactions** - Direct SDK usage only
 
