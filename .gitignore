@@ -1,0 +1,388 @@
+# SavingGrace .gitignore
+
+# =============================================================================
+# SECRETS & ENVIRONMENT VARIABLES
+# =============================================================================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env*.local
+
+# AWS Credentials
+.aws/credentials
+aws-credentials.json
+credentials.json
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+
+# =============================================================================
+# NODE & NPM
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Package manager lock files (keep or remove based on preference)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# =============================================================================
+# REACT / VITE / FRONTEND
+# =============================================================================
+# Build output
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+.stylelintcache
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Storybook
+storybook-static/
+
+# =============================================================================
+# AWS & CLOUD
+# =============================================================================
+# CDK
+cdk.out/
+cdk.context.json
+.cdk.staging/
+
+# CloudFormation
+cloudformation-template-*.yaml
+cloudformation-template-*.json
+packaged-*.yaml
+packaged-*.json
+
+# SAM
+.aws-sam/
+samconfig.toml
+
+# Terraform (if used)
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
+
+# Serverless Framework (if used)
+.serverless/
+serverless.yml.backup
+
+# Lambda deployment packages
+*.zip
+lambda-*.zip
+function.zip
+layer.zip
+
+# =============================================================================
+# TESTING
+# =============================================================================
+# Jest
+jest-results.json
+junit.xml
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Coverage reports
+coverage/
+*.coverage
+htmlcov/
+.coverage
+
+# Load testing results
+artillery-report-*.json
+artillery-report-*.html
+
+# =============================================================================
+# LOGS
+# =============================================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Lambda logs
+lambda-logs/
+*.log.json
+
+# CloudWatch logs (local)
+cloudwatch-logs/
+
+# =============================================================================
+# IDE & EDITORS
+# =============================================================================
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Atom
+.atom/
+
+# =============================================================================
+# OPERATING SYSTEM
+# =============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# TEMPORARY FILES
+# =============================================================================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+# SQLite (if using for local dev)
+*.sqlite
+*.sqlite3
+*.db
+
+# DynamoDB Local
+.dynamodb/
+
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+# Generated documentation
+docs/generated/
+api-docs/
+.docusaurus/
+
+# =============================================================================
+# DEPLOYMENT & BUILD ARTIFACTS
+# =============================================================================
+# Build artifacts
+*.tgz
+*.tar.gz
+
+# Deployment packages
+deployments/
+releases/
+
+# Source maps (optional - include if debugging production)
+*.map
+
+# =============================================================================
+# MONITORING & ANALYTICS
+# =============================================================================
+# Bundle analysis
+bundle-stats.html
+bundle-report.html
+.webpack-bundle-analyzer/
+
+# Lighthouse reports
+lighthouse-report-*.html
+lighthouse-report-*.json
+
+# Performance reports
+performance-report-*.json
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Turborepo
+.turbo/
+
+# =============================================================================
+# PROJECT-SPECIFIC
+# =============================================================================
+# Test data
+test-data/
+fixtures/generated/
+
+# Receipts uploaded during development
+receipts-dev/
+uploads-local/
+
+# Generated OpenAPI/Swagger specs
+swagger-output.json
+openapi-generated.yaml
+
+# Architecture diagrams (if auto-generated)
+# diagrams/generated/
+
+# Mock data
+mocks/generated/
+
+# Local development overrides
+local-config.json
+local-settings.json
+
+# =============================================================================
+# KEEP THESE FILES (exceptions to above rules)
+# =============================================================================
+# Keep example files
+!.env.example
+!config.example.json
+!settings.example.json
+
+# Keep specific documentation
+!README.md
+!CLAUDE.md
+!PRD.md
+!TASKS.md
+
+# Keep CI/CD configuration
+!.github/
+!.github/workflows/
+
+# Keep Docker files
+!Dockerfile
+!docker-compose.yml
+!.dockerignore
+
+# =============================================================================
+# SECURITY SCANNING RESULTS
+# =============================================================================
+# Snyk
+.snyk
+
+# npm audit
+npm-audit.json
+
+# Security scan results
+security-scan-*.json
+vulnerability-report-*.html
+
+# =============================================================================
+# COMPLIANCE & AUDIT
+# =============================================================================
+# Audit reports (keep in secure location)
+audit-reports/
+compliance-reports/
+soc2-evidence/
+
+# PII Data (NEVER commit)
+pii-data/
+personal-data/
+recipient-data-export/
