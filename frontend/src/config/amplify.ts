@@ -3,7 +3,7 @@
  * Sets up AWS Cognito for authentication
  */
 
-import { Amplify } from '@aws-amplify/auth';
+import { Amplify } from 'aws-amplify';
 import { env } from './env';
 
 export const configureAmplify = () => {
