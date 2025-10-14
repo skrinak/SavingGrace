@@ -116,26 +116,10 @@ class ApiStack(Stack):
         )
 
         # =========================================================================
-        # API RESOURCES (placeholders for Lambda integration)
+        # API RESOURCES (will be integrated with Lambda functions)
         # =========================================================================
         # Donors
         donors = self.api.root.add_resource("donors")
-        # Add placeholder method with auth to attach authorizer to API
-        donors.add_method(
-            "GET",
-            apigateway.MockIntegration(
-                integration_responses=[
-                    apigateway.IntegrationResponse(
-                        status_code="200",
-                        response_templates={"application/json": '{"message": "Placeholder"}'},
-                    )
-                ],
-                request_templates={"application/json": '{"statusCode": 200}'},
-            ),
-            method_responses=[apigateway.MethodResponse(status_code="200")],
-            authorizer=self.authorizer,
-            authorization_type=apigateway.AuthorizationType.COGNITO,
-        )
         donor_id = donors.add_resource("{donorId}")
         donor_donations = donor_id.add_resource("donations")
 
