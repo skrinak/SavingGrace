@@ -23,6 +23,12 @@ import DonorListPage from './pages/donors/DonorListPage';
 import DonorFormPage from './pages/donors/DonorFormPage';
 import DonorDetailPage from './pages/donors/DonorDetailPage';
 
+// Donations
+import DonationListPage from './pages/donations/DonationListPage';
+import DonationFormPage from './pages/donations/DonationFormPage';
+import DonationDetailPage from './pages/donations/DonationDetailPage';
+import ExpiringItemsPage from './pages/donations/ExpiringItemsPage';
+
 // Configure AWS Amplify on app initialization
 configureAmplify();
 
@@ -85,10 +91,39 @@ const App: React.FC = () => {
               path="/donations"
               element={
                 <ProtectedRoute requirePermission="donations:read">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Donations</h1>
-                    <p className="mt-2 text-gray-600">Donation tracking coming soon</p>
-                  </div>
+                  <DonationListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donations/new"
+              element={
+                <ProtectedRoute requirePermission="donations:write">
+                  <DonationFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donations/expiring"
+              element={
+                <ProtectedRoute requirePermission="donations:read">
+                  <ExpiringItemsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donations/:donationId"
+              element={
+                <ProtectedRoute requirePermission="donations:read">
+                  <DonationDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donations/:donationId/edit"
+              element={
+                <ProtectedRoute requirePermission="donations:write">
+                  <DonationFormPage />
                 </ProtectedRoute>
               }
             />
