@@ -14,7 +14,7 @@ import {
   fetchAuthSession,
   updatePassword,
   resendSignUpCode,
-} from '@aws-amplify/auth';
+} from 'aws-amplify/auth';
 import type {
   LoginCredentials,
   SignupData,
