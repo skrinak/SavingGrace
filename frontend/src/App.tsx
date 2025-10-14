@@ -29,6 +29,11 @@ import DonationFormPage from './pages/donations/DonationFormPage';
 import DonationDetailPage from './pages/donations/DonationDetailPage';
 import ExpiringItemsPage from './pages/donations/ExpiringItemsPage';
 
+// Recipients
+import RecipientListPage from './pages/recipients/RecipientListPage';
+import RecipientFormPage from './pages/recipients/RecipientFormPage';
+import RecipientDetailPage from './pages/recipients/RecipientDetailPage';
+
 // Configure AWS Amplify on app initialization
 configureAmplify();
 
@@ -133,10 +138,31 @@ const App: React.FC = () => {
               path="/recipients"
               element={
                 <ProtectedRoute requirePermission="recipients:read">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Recipients</h1>
-                    <p className="mt-2 text-gray-600">Recipient management coming soon</p>
-                  </div>
+                  <RecipientListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recipients/new"
+              element={
+                <ProtectedRoute requirePermission="recipients:write">
+                  <RecipientFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recipients/:recipientId"
+              element={
+                <ProtectedRoute requirePermission="recipients:read">
+                  <RecipientDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recipients/:recipientId/edit"
+              element={
+                <ProtectedRoute requirePermission="recipients:write">
+                  <RecipientFormPage />
                 </ProtectedRoute>
               }
             />
