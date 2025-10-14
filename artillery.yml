@@ -1,0 +1,192 @@
+config:
+  target: "{{ $processEnvironment.API_URL }}"
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up load"
+
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 50
+      name: "Sustained load"
+
+    # Peak load phase (100 concurrent users)
+    - duration: 120
+      arrivalRate: 100
+      name: "Peak load"
+
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Cool-down"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+
+  # Performance thresholds
+  ensure:
+    # p95 response time < 500ms
+    p95: 500
+
+    # p99 response time < 1000ms
+    p99: 1000
+
+    # Max response time < 2000ms
+    max: 2000
+
+    # Error rate < 1%
+    maxErrorRate: 1
+
+  # Plugins
+  plugins:
+    expect: {}
+    metrics-by-endpoint: {}
+
+  # Processor for custom functions
+  processor: "./artillery-processor.js"
+
+  # Environment variables
+  environments:
+    dev:
+      target: "https://a9np4bbum8.execute-api.us-west-2.amazonaws.com/dev"
+    staging:
+      target: "https://api-staging.savinggrace.example.com"
+    production:
+      target: "https://api.savinggrace.example.com"
+
+scenarios:
+  # Health check scenario
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  # Authentication scenario
+  - name: "User Authentication"
+    weight: 20
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "{{ $randomString() }}@test.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.accessToken"
+              as: "accessToken"
+          expect:
+            - statusCode: [200, 401]
+
+  # List donors scenario (authenticated)
+  - name: "List Donors"
+    weight: 15
+    beforeScenario: "authenticateUser"
+    flow:
+      - get:
+          url: "/donors"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+      - think: 2
+
+      # Get specific donor
+      - get:
+          url: "/donors/{{ donorId }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: [200, 404]
+
+  # List donations scenario
+  - name: "List Donations"
+    weight: 15
+    beforeScenario: "authenticateUser"
+    flow:
+      - get:
+          url: "/donations"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+      - think: 2
+
+      # Filter donations by date
+      - get:
+          url: "/donations?startDate={{ startDate }}&endDate={{ endDate }}"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+
+  # Inventory check scenario
+  - name: "Check Inventory"
+    weight: 20
+    beforeScenario: "authenticateUser"
+    flow:
+      - get:
+          url: "/inventory"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+      - think: 1
+
+      # Check expiring items
+      - get:
+          url: "/inventory/alerts"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+
+  # Dashboard metrics scenario
+  - name: "Dashboard Metrics"
+    weight: 15
+    beforeScenario: "authenticateUser"
+    flow:
+      - get:
+          url: "/reports/dashboard"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+  # Create donation scenario (write operation)
+  - name: "Create Donation"
+    weight: 5
+    beforeScenario: "authenticateUser"
+    flow:
+      - post:
+          url: "/donations"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          json:
+            donorId: "{{ donorId }}"
+            donationDate: "{{ todayDate }}"
+            items:
+              - category: "Produce"
+                itemName: "Test Item"
+                quantity: 5
+                unit: "lbs"
+                expirationDate: "{{ futureDate }}"
+          expect:
+            - statusCode: [201, 400]

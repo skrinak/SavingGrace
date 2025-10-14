@@ -13,6 +13,17 @@
     "test:frontend": "npm run test --workspace=frontend",
     "test:backend": "cd backend && make test",
     "test:all": "npm run test:frontend && npm run test:backend",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox",
+    "test:e2e:webkit": "playwright test --project=webkit",
+    "test:performance": "artillery run --environment dev artillery.yml",
+    "test:performance:staging": "artillery run --environment staging artillery.yml",
+    "test:performance:prod": "artillery run --environment production artillery.yml",
+    "test:report": "playwright show-report",
     "lint": "npm run lint --workspace=frontend && cd backend && make lint",
     "lint:fix": "npm run lint:fix --workspace=frontend",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore && cd backend && make format",
@@ -35,6 +46,9 @@
     "url": "https://github.com/skrinak/SavingGrace.git"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.7.2",
+    "artillery": "^2.0.26",
     "prettier": "^3.1.1"
   },
   "engines": {
