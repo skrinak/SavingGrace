@@ -53,9 +53,9 @@ npm run lint
 
 ### Backend Development
 ```bash
-# Install Lambda dependencies (Python only)
+# Install Lambda dependencies (Python only) using UV
 cd functions/<function-name>
-pip install -r requirements.txt -t .
+uv pip install -r requirements.txt -t .
 
 # Run unit tests
 pytest
@@ -66,9 +66,6 @@ zip -r function.zip .
 
 ### Infrastructure Deployment
 ```bash
-# IMPORTANT: Always activate conda environment before AWS CLI commands
-conda activate aws
-
 # Deploy entire stack (CloudFormation)
 aws cloudformation deploy --template-file template.yaml --stack-name savinggrace-dev --region us-west-2
 
@@ -104,7 +101,12 @@ npm run test:load
 - All backend infrastructure must use the 921212210452 AWS account
 - Secrets are managed in .env
 - **ALL AWS resources MUST be deployed to us-west-2 region ONLY**
-- **CRITICAL: Always run `conda activate aws` before ANY AWS CLI command**
+
+### Python Environment
+- **Use UV for all Python package management** - Fast, Rust-based pip replacement
+- Install UV: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Use `uv pip install` instead of `pip install`
+- Use `uv pip compile` to generate lock files
 
 ### Backend Architecture Rules
 
@@ -437,12 +439,7 @@ test('DonorForm submits data correctly', async () => {
 
 ## Helpful AWS CLI Commands (us-west-2 only)
 
-**CRITICAL: ALWAYS run `conda activate aws` before any AWS CLI command**
-
 ```bash
-# Activate conda environment (REQUIRED before any aws command)
-conda activate aws
-
 # View Lambda logs
 aws logs tail /aws/lambda/<function-name> --follow --region us-west-2
 
@@ -511,7 +508,7 @@ aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Errors
 2.  **Use Node.js for Lambda functions** - Python 3.11+ ONLY
 3.  **Deploy outside us-west-2** - ALL AWS resources must be in us-west-2
 4.  **Use any region other than us-west-2** - No exceptions
-5.  **Run AWS CLI commands without `conda activate aws`** - ALWAYS activate conda environment first
+5.  **Use pip or conda** - Use UV for Python package management
 6.  **Add mock data** except for debugging (delete immediately)
 7.  **Create documentation** unless explicitly requested
 8.  **Commit code** unless explicitly asked
@@ -527,7 +524,7 @@ aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Errors
 
 ## ✅ ALWAYS DO THIS
 
-1. **Run `conda activate aws` before ANY AWS CLI command** - Required for all aws commands
+1. **Use UV for ALL Python package management** - `uv pip install`, not pip or conda
 2. **Search before creating** new code
 3. **Read files directly** without asking permission
 4. **Fix root causes** not symptoms

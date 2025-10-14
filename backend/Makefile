@@ -1,8 +1,8 @@
 .PHONY: install test lint format typecheck clean deploy
 
-# Install dependencies
+# Install dependencies using UV
 install:
-	pip install -r requirements.txt
+	uv pip install -r requirements.txt
 
 # Run tests
 test:
@@ -71,6 +71,6 @@ package-%:
 	cd functions/$* && \
 	rm -rf package/ function.zip && \
 	mkdir -p package && \
-	pip install -r requirements.txt -t package/ && \
+	uv pip install -r requirements.txt -t package/ && \
 	cd package && zip -r ../function.zip . && \
 	cd .. && zip -g function.zip *.py
