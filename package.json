@@ -1,0 +1,44 @@
+{
+  "name": "savinggrace",
+  "version": "1.0.0",
+  "description": "Food donation tracking and distribution platform for non-profit organizations",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "test": "npm run test --workspace=frontend",
+    "test:frontend": "npm run test --workspace=frontend",
+    "test:backend": "cd backend && make test",
+    "test:all": "npm run test:frontend && npm run test:backend",
+    "lint": "npm run lint --workspace=frontend && cd backend && make lint",
+    "lint:fix": "npm run lint:fix --workspace=frontend",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore && cd backend && make format",
+    "typecheck": "npm run typecheck --workspace=frontend && cd backend && make typecheck",
+    "deploy:dev": "cd backend && make deploy-dev",
+    "deploy:staging": "cd backend && make deploy-staging",
+    "deploy:prod": "cd backend && make deploy-prod"
+  },
+  "keywords": [
+    "food-donation",
+    "non-profit",
+    "aws",
+    "serverless",
+    "react"
+  ],
+  "author": "SavingGrace Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skrinak/SavingGrace.git"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

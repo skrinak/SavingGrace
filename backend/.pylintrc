@@ -1,0 +1,21 @@
+[MASTER]
+ignore=CVS,.git,__pycache__,dist,build,cdk.out
+
+[MESSAGES CONTROL]
+disable=C0111,  # missing-docstring
+        C0103,  # invalid-name
+        R0903,  # too-few-public-methods
+        W0212,  # protected-access (for tests)
+
+[FORMAT]
+max-line-length=100
+indent-string='    '
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,pk,sk
+
+[DESIGN]
+max-args=7
+max-locals=15
+max-returns=6
+max-branches=12
