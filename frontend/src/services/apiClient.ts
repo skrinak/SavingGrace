@@ -3,7 +3,8 @@
  * Axios instance configured with authentication interceptors and error handling
  */
 
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { env } from '../config/env';
 import * as authService from './authService';
 
