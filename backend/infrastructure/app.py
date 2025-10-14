@@ -97,6 +97,7 @@ monitoring_stack = MonitoringStack(
     f"SavingGrace-Monitoring-{environment}",
     env=env_us_west_2,
     environment=environment,
+    api_id=api_stack.api.rest_api_id,
     description=f"SavingGrace monitoring for {environment}",
 )
 
