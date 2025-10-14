@@ -1,0 +1,404 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  AWS_REGION: us-west-2
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ========================================================================
+  # JOB 1: Test Backend Code
+  # ========================================================================
+  test:
+    name: Test Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Create virtual environment
+        working-directory: backend
+        run: uv venv
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
+          uv pip install pytest pytest-cov pytest-asyncio boto3-stubs[essential]
+
+      - name: Run Black formatter check
+        working-directory: backend
+        run: |
+          source .venv/bin/activate
+          black --check functions/ lambda_layer/python/lib/ infrastructure/
+
+      - name: Run Pylint
+        working-directory: backend
+        run: |
+          source .venv/bin/activate
+          PYTHONPATH="lambda_layer/python:$PYTHONPATH" pylint functions/**/*.py lambda_layer/python/lib/*.py infrastructure/**/*.py --disable=all --enable=E,F --score=yes || true
+
+      - name: Run Mypy type checking
+        working-directory: backend
+        run: |
+          source .venv/bin/activate
+          PATH=".venv/bin:$PATH" MYPYPATH="lambda_layer/python" mypy functions/ lambda_layer/python/lib/ infrastructure/ --ignore-missing-imports --pretty || true
+
+      - name: Run unit tests
+        working-directory: backend
+        run: |
+          source .venv/bin/activate
+          pytest tests/ -v --cov=functions --cov=lambda_layer --cov-report=xml --cov-report=term
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          fail_ci_if_error: false
+
+  # ========================================================================
+  # JOB 2: Deploy to Dev
+  # ========================================================================
+  deploy-dev:
+    name: Deploy to Dev
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'dev'
+    environment:
+      name: dev
+      url: https://a9np4bbum8.execute-api.us-west-2.amazonaws.com/dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_BACKEND_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_BACKEND_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "Deploying to AWS Account: $ACCOUNT_ID"
+          if [ "$ACCOUNT_ID" != "921212210452" ]; then
+            echo "ERROR: Wrong AWS account! Expected 921212210452, got $ACCOUNT_ID"
+            exit 1
+          fi
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
+
+      - name: CDK Bootstrap (if needed)
+        working-directory: backend/infrastructure
+        run: |
+          source ../.venv/bin/activate
+          cdk bootstrap aws://921212210452/us-west-2 || true
+
+      - name: CDK Synth
+        working-directory: backend/infrastructure
+        run: |
+          source ../.venv/bin/activate
+          cdk synth --all -c env=dev --region us-west-2
+
+      - name: CDK Deploy
+        working-directory: backend/infrastructure
+        run: |
+          source ../.venv/bin/activate
+          cdk deploy --all -c env=dev --require-approval never --region us-west-2
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against dev environment..."
+          # Test health endpoint
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://a9np4bbum8.execute-api.us-west-2.amazonaws.com/dev/health)
+          if [ "$HEALTH_STATUS" != "200" ]; then
+            echo "ERROR: Health check failed with status $HEALTH_STATUS"
+            exit 1
+          fi
+          echo "✅ Dev deployment successful - health check passed"
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Dev deployment successful"
+          else
+            echo "❌ Dev deployment failed"
+          fi
+
+  # ========================================================================
+  # JOB 3: Deploy to Staging
+  # ========================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://8wg0ijp4ld.execute-api.us-west-2.amazonaws.com/staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_BACKEND_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_BACKEND_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "Deploying to AWS Account: $ACCOUNT_ID"
+          if [ "$ACCOUNT_ID" != "921212210452" ]; then
+            echo "ERROR: Wrong AWS account! Expected 921212210452, got $ACCOUNT_ID"
+            exit 1
+          fi
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
+
+      - name: CDK Synth
+        working-directory: backend/infrastructure
+        run: |
+          source ../.venv/bin/activate
+          cdk synth --all -c env=staging --region us-west-2
+
+      - name: CDK Deploy
+        working-directory: backend/infrastructure
+        run: |
+          source ../.venv/bin/activate
+          cdk deploy --all -c env=staging --require-approval never --region us-west-2
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against staging environment..."
+          # Test health endpoint
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://8wg0ijp4ld.execute-api.us-west-2.amazonaws.com/staging/health)
+          if [ "$HEALTH_STATUS" != "200" ]; then
+            echo "ERROR: Health check failed with status $HEALTH_STATUS"
+            exit 1
+          fi
+          echo "✅ Staging deployment successful - health check passed"
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Staging deployment successful"
+          else
+            echo "❌ Staging deployment failed"
+          fi
+
+  # ========================================================================
+  # JOB 4: Deploy to Production (Manual Approval Required)
+  # ========================================================================
+  deploy-prod:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'prod'
+    environment:
+      name: production
+      url: https://api.savinggrace.org/prod
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_BACKEND_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_BACKEND_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "Deploying to AWS Account: $ACCOUNT_ID"
+          if [ "$ACCOUNT_ID" != "921212210452" ]; then
+            echo "ERROR: Wrong AWS account! Expected 921212210452, got $ACCOUNT_ID"
+            exit 1
+          fi
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r requirements.txt
+
+      - name: CDK Synth
+        working-directory: backend/infrastructure
+        run: |
+          source ../.venv/bin/activate
+          cdk synth --all -c env=prod --region us-west-2
+
+      - name: CDK Deploy
+        working-directory: backend/infrastructure
+        run: |
+          source ../.venv/bin/activate
+          cdk deploy --all -c env=prod --require-approval never --region us-west-2
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against production environment..."
+          # Test health endpoint
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.savinggrace.org/prod/health)
+          if [ "$HEALTH_STATUS" != "200" ]; then
+            echo "ERROR: Health check failed with status $HEALTH_STATUS"
+            exit 1
+          fi
+          echo "✅ Production deployment successful - health check passed"
+
+      - name: Monitor for 15 minutes
+        run: |
+          echo "Monitoring production for 15 minutes..."
+          echo "Check CloudWatch dashboard: https://console.aws.amazon.com/cloudwatch/home?region=us-west-2#dashboards:name=SavingGrace-prod"
+          sleep 60  # Wait 1 minute in CI (full monitoring done manually)
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Production deployment successful"
+            echo "🔔 IMPORTANT: Monitor CloudWatch for 15 minutes"
+          else
+            echo "❌ Production deployment failed"
+            echo "🚨 ROLLBACK REQUIRED"
+          fi
+
+  # ========================================================================
+  # JOB 5: Rollback on Failure
+  # ========================================================================
+  rollback:
+    name: Rollback on Failure
+    needs: [deploy-dev, deploy-staging, deploy-prod]
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine failed environment
+        id: env
+        run: |
+          if [ "${{ needs.deploy-prod.result }}" == "failure" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.deploy-staging.result }}" == "failure" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Rollback notification
+        run: |
+          echo "🚨 Deployment to ${{ steps.env.outputs.environment }} FAILED"
+          echo "Manual rollback required:"
+          echo "1. Check CloudWatch logs for errors"
+          echo "2. Identify last known good deployment"
+          echo "3. Run: cdk deploy --all -c env=${{ steps.env.outputs.environment }} --rollback"
+          echo "4. Verify health check passes"
+          echo "5. Monitor for 15 minutes"

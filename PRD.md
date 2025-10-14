@@ -603,8 +603,8 @@ GSI: InventoryByExpiration (expirationDate-index)
 ## API Specifications
 
 ### REST API Structure
-
-Base URL: `https://us-west-2.console.aws.amazon.com/s3/buckets/saving-grace/{stage}`
+Frontend URL: s3://saving-grace/
+Base URL: `https://saving-grace.s3.us-west-2.amazonaws.com/{stage}`
 
 #### Authentication
 All endpoints require AWS Cognito JWT token in `Authorization` header:

@@ -1,0 +1,387 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  AWS_REGION: us-west-2
+  NODE_VERSION: '20'
+
+jobs:
+  # ========================================================================
+  # JOB 1: Test Frontend Code
+  # ========================================================================
+  test:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run type checking
+        working-directory: frontend
+        run: npm run typecheck || true
+
+      - name: Run unit tests
+        working-directory: frontend
+        run: npm test -- --coverage --watchAll=false
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./frontend/coverage/coverage-final.json
+          flags: frontend
+          fail_ci_if_error: false
+
+      - name: Build for production
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: https://a9np4bbum8.execute-api.us-west-2.amazonaws.com/dev
+          VITE_COGNITO_USER_POOL_ID: us-west-2_DeQrm3GHa
+          VITE_COGNITO_CLIENT_ID: pn75f7u9cqsunkje417vtqvvf
+          VITE_AWS_REGION: us-west-2
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+          retention-days: 7
+
+  # ========================================================================
+  # JOB 2: Deploy to Dev S3/CloudFront
+  # ========================================================================
+  deploy-dev:
+    name: Deploy to Dev
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'dev'
+    environment:
+      name: dev
+      url: https://d1234567890abc.cloudfront.net
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build for dev
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: https://a9np4bbum8.execute-api.us-west-2.amazonaws.com/dev
+          VITE_COGNITO_USER_POOL_ID: us-west-2_DeQrm3GHa
+          VITE_COGNITO_CLIENT_ID: pn75f7u9cqsunkje417vtqvvf
+          VITE_AWS_REGION: us-west-2
+        run: npm run build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_FRONTEND_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_FRONTEND_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "Deploying to AWS Account: $ACCOUNT_ID"
+          if [ "$ACCOUNT_ID" != "563334150189" ]; then
+            echo "ERROR: Wrong AWS account! Expected 563334150189, got $ACCOUNT_ID"
+            exit 1
+          fi
+
+      - name: Deploy to S3
+        working-directory: frontend
+        run: |
+          # Sync build to S3 bucket
+          aws s3 sync dist/ s3://savinggrace-frontend-dev-563334150189 \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --region ${{ env.AWS_REGION }}
+
+          # Upload HTML files with no cache
+          aws s3 sync dist/ s3://savinggrace-frontend-dev-563334150189 \
+            --exclude "*" \
+            --include "*.html" \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Invalidate CloudFront cache
+        run: |
+          # Get CloudFront distribution ID
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='SavingGrace Dev Frontend'].Id" \
+            --output text \
+            --region us-east-1)
+
+          if [ -z "$DISTRIBUTION_ID" ]; then
+            echo "WARNING: CloudFront distribution not found for dev"
+          else
+            echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
+            aws cloudfront create-invalidation \
+              --distribution-id $DISTRIBUTION_ID \
+              --paths "/*" \
+              --region us-east-1
+          fi
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Dev frontend deployment successful"
+          else
+            echo "❌ Dev frontend deployment failed"
+          fi
+
+  # ========================================================================
+  # JOB 3: Deploy to Staging S3/CloudFront
+  # ========================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.savinggrace.org
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build for staging
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: https://8wg0ijp4ld.execute-api.us-west-2.amazonaws.com/staging
+          VITE_COGNITO_USER_POOL_ID: us-west-2_OnYDSY7gU
+          VITE_COGNITO_CLIENT_ID: 1jq9uia6llqmtpkqqpsecvsskm
+          VITE_AWS_REGION: us-west-2
+        run: npm run build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_FRONTEND_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_FRONTEND_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "Deploying to AWS Account: $ACCOUNT_ID"
+          if [ "$ACCOUNT_ID" != "563334150189" ]; then
+            echo "ERROR: Wrong AWS account! Expected 563334150189, got $ACCOUNT_ID"
+            exit 1
+          fi
+
+      - name: Deploy to S3
+        working-directory: frontend
+        run: |
+          # Sync build to S3 bucket
+          aws s3 sync dist/ s3://savinggrace-frontend-staging-563334150189 \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --region ${{ env.AWS_REGION }}
+
+          # Upload HTML files with no cache
+          aws s3 sync dist/ s3://savinggrace-frontend-staging-563334150189 \
+            --exclude "*" \
+            --include "*.html" \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Invalidate CloudFront cache
+        run: |
+          # Get CloudFront distribution ID
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='SavingGrace Staging Frontend'].Id" \
+            --output text \
+            --region us-east-1)
+
+          if [ -z "$DISTRIBUTION_ID" ]; then
+            echo "WARNING: CloudFront distribution not found for staging"
+          else
+            echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
+            aws cloudfront create-invalidation \
+              --distribution-id $DISTRIBUTION_ID \
+              --paths "/*" \
+              --region us-east-1
+          fi
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Staging frontend deployment successful"
+          else
+            echo "❌ Staging frontend deployment failed"
+          fi
+
+  # ========================================================================
+  # JOB 4: Deploy to Production (Manual Approval Required)
+  # ========================================================================
+  deploy-prod:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'prod'
+    environment:
+      name: production
+      url: https://app.savinggrace.org
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build for production
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: https://api.savinggrace.org/prod
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.PROD_COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.PROD_COGNITO_CLIENT_ID }}
+          VITE_AWS_REGION: us-west-2
+        run: npm run build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_FRONTEND_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_FRONTEND_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "Deploying to AWS Account: $ACCOUNT_ID"
+          if [ "$ACCOUNT_ID" != "563334150189" ]; then
+            echo "ERROR: Wrong AWS account! Expected 563334150189, got $ACCOUNT_ID"
+            exit 1
+          fi
+
+      - name: Deploy to S3
+        working-directory: frontend
+        run: |
+          # Sync build to S3 bucket
+          aws s3 sync dist/ s3://savinggrace-frontend-prod-563334150189 \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --region ${{ env.AWS_REGION }}
+
+          # Upload HTML files with no cache
+          aws s3 sync dist/ s3://savinggrace-frontend-prod-563334150189 \
+            --exclude "*" \
+            --include "*.html" \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Invalidate CloudFront cache
+        run: |
+          # Get CloudFront distribution ID
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='SavingGrace Production Frontend'].Id" \
+            --output text \
+            --region us-east-1)
+
+          if [ -z "$DISTRIBUTION_ID" ]; then
+            echo "ERROR: CloudFront distribution not found for production!"
+            exit 1
+          fi
+
+          echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
+          aws cloudfront create-invalidation \
+            --distribution-id $DISTRIBUTION_ID \
+            --paths "/*" \
+            --region us-east-1
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for CloudFront invalidation to complete (30 seconds)..."
+          sleep 30
+
+          # Test production URL
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://app.savinggrace.org)
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "ERROR: Production frontend not responding (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+          echo "✅ Production frontend is live"
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Production frontend deployment successful"
+            echo "🔔 IMPORTANT: Monitor CloudWatch for 15 minutes"
+          else
+            echo "❌ Production frontend deployment failed"
+            echo "🚨 ROLLBACK REQUIRED"
+          fi

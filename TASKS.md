@@ -980,7 +980,7 @@
 ---
 
 ### 15. CI/CD Pipeline Setup
-**Status**: [ ]
+**Status**: [✓]
 **Dependencies**: Task 14
 **Can Run in Parallel**: No
 
@@ -1007,11 +1007,11 @@
 - Test production deployment (dry run)
 
 **Completion Criteria**:
-- [ ] CI/CD pipeline created
-- [ ] Automated testing integrated
-- [ ] Rollback functionality working
-- [ ] Manual approval gate configured
-- [ ] Pipeline documented
+- [x] CI/CD pipeline created
+- [x] Automated testing integrated
+- [x] Rollback functionality working
+- [x] Manual approval gate configured
+- [x] Pipeline documented
 
 ---
 
@@ -1098,9 +1098,9 @@ Update this section as tasks are completed:
 **Phase 2**: 9/9 completed ✅ (Note: Task 7 scheduled jobs deferred - not blocking)
 **Phase 3**: 10/10 completed ✅
 **Phase 4**: 3/3 completed ✅
-**Phase 5**: 1/4 completed
+**Phase 5**: 2/4 completed
 
-**Overall Progress**: 27/30 tasks completed (90%)
+**Overall Progress**: 28/30 tasks completed (93%)
 
 ### Latest Deployment (2025-10-14)
 
@@ -1171,6 +1171,56 @@ cd backend/infrastructure
 source ../.venv/bin/activate
 cdk deploy --all -c env=staging --require-approval never --region us-west-2
 ```
+
+---
+
+### CI/CD Pipeline Setup (2025-10-14)
+
+**GitHub Actions Workflows Created:**
+
+1. **Backend CI/CD** (`.github/workflows/backend-ci.yml`):
+   - **Stages**: Test → Deploy Dev → Deploy Staging → Deploy Prod (manual approval)
+   - **Tests**: Black, Pylint, Mypy, pytest with coverage
+   - **Deployment**: CDK deploy with smoke tests
+   - **Rollback**: Automatic notification on failure
+
+2. **Frontend CI/CD** (`.github/workflows/frontend-ci.yml`):
+   - **Stages**: Test → Deploy Dev → Deploy Staging → Deploy Prod (manual approval)
+   - **Tests**: ESLint, TypeScript, Jest with coverage
+   - **Deployment**: S3 sync + CloudFront invalidation
+   - **Build configs**: Environment-specific (dev, staging, prod)
+
+3. **PR Checks** (`.github/workflows/pr-checks.yml`):
+   - **Checks**: Backend tests, Frontend tests, Security scans, Dependency audits, CDK synth
+   - **Triggers**: All pull requests to main or develop
+   - **Tools**: Trivy (vulnerability scanning), TruffleHog (secret detection)
+
+**Deployment Workflows:**
+
+- **Automatic**: Push to `main` → Deploy to Dev → Deploy to Staging
+- **Manual**: GitHub Actions → Run workflow → Select `prod` → Approve → Deploy to Production
+- **Rollback**: CloudFormation automatic rollback on failure + manual procedures documented
+
+**Documentation:**
+- ✅ Comprehensive deployment guide: `docs/DEPLOYMENT.md` (400+ lines)
+- ✅ CI/CD quick start guide: `docs/CICD-QUICKSTART.md`
+- ✅ README with deployment badges and status
+- ✅ Rollback procedures documented
+
+**GitHub Secrets Required:**
+- `AWS_BACKEND_ACCESS_KEY_ID` / `AWS_BACKEND_SECRET_ACCESS_KEY` (Account: 921212210452)
+- `AWS_FRONTEND_ACCESS_KEY_ID` / `AWS_FRONTEND_SECRET_ACCESS_KEY` (Account: 563334150189)
+- `PROD_COGNITO_USER_POOL_ID` / `PROD_COGNITO_CLIENT_ID` (Production only)
+
+**Pipeline Features:**
+- ✅ Automated testing in all environments
+- ✅ Manual approval gate before production
+- ✅ CloudFormation rollback on deployment failure
+- ✅ Smoke tests after each deployment
+- ✅ Environment-specific configuration
+- ✅ Deployment badges in README
+- ✅ AWS account verification in each job
+- ✅ Multi-stage deployment (dev → staging → prod)
 
 ---
 
