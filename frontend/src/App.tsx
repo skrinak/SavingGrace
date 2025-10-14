@@ -18,6 +18,11 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 // Dashboard
 import DashboardPage from './pages/dashboard/DashboardPage';
 
+// Donors
+import DonorListPage from './pages/donors/DonorListPage';
+import DonorFormPage from './pages/donors/DonorFormPage';
+import DonorDetailPage from './pages/donors/DonorDetailPage';
+
 // Configure AWS Amplify on app initialization
 configureAmplify();
 
@@ -46,10 +51,31 @@ const App: React.FC = () => {
               path="/donors"
               element={
                 <ProtectedRoute requirePermission="donors:read">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Donors</h1>
-                    <p className="mt-2 text-gray-600">Donor management coming soon</p>
-                  </div>
+                  <DonorListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donors/new"
+              element={
+                <ProtectedRoute requirePermission="donors:write">
+                  <DonorFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donors/:donorId"
+              element={
+                <ProtectedRoute requirePermission="donors:read">
+                  <DonorDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donors/:donorId/edit"
+              element={
+                <ProtectedRoute requirePermission="donors:write">
+                  <DonorFormPage />
                 </ProtectedRoute>
               }
             />
