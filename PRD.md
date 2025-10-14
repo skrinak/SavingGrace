@@ -49,6 +49,267 @@ SavingGrace is a production-ready web application designed to help non-profit or
 - **Volunteer**: View-only access, mark distributions complete
 - **Read-Only**: Dashboard and reporting access
 
+#### User Personas
+
+##### Persona 1: Sarah Chen - Executive Director (Admin Role)
+
+**Background**: Sarah is the Executive Director of Grace Community Food Bank, a mid-sized non-profit serving 500+ families monthly. She has 15 years of non-profit management experience and is responsible for operations, fundraising, compliance, and strategic planning. Sarah works 50+ hours per week and juggles board meetings, grant applications, and day-to-day operations.
+
+**Technical Proficiency**: Moderate. Comfortable with Google Workspace, email, and basic software tools. Prefers intuitive interfaces and gets frustrated with overly technical systems.
+
+**Goals & Motivations**:
+- Ensure SOC2 compliance for grant requirements
+- Maintain accurate records for annual audits and tax reporting
+- Demonstrate impact to funders with clear metrics (pounds distributed, families served, waste reduction)
+- Protect recipient privacy and maintain GDPR/CCPA compliance
+- Manage team access and ensure security best practices
+- Make data-driven decisions about resource allocation
+
+**Pain Points**:
+- Current system uses Excel spreadsheets and paper forms, leading to data entry errors
+- Can't quickly generate reports for board meetings or grant applications
+- No visibility into real-time inventory levels
+- Difficult to track volunteer hours and contributions
+- Security concerns with shared spreadsheets containing PII
+- Spending 10+ hours per month manually compiling reports
+
+**Daily Responsibilities**:
+- Review overnight donation reports and inventory alerts
+- Approve new user accounts for volunteers and staff
+- Monitor compliance dashboards for security and privacy issues
+- Generate impact reports for funders and board members
+- Configure system settings and user permissions
+- Respond to critical alerts (food expiration, security issues)
+
+**How SavingGrace Helps**:
+- **User Management**: Create accounts, assign roles, enforce MFA for security compliance
+- **Compliance Dashboard**: Real-time view of SOC2, GDPR compliance status
+- **Impact Reports**: One-click generation of donor impact reports with metrics
+- **Audit Trail**: Complete history of all data changes for compliance audits
+- **Security Alerts**: Immediate notification of unusual activity or access attempts
+- **Cross-functional Visibility**: Single source of truth for all departments
+
+**Typical Workflows**:
+1. **Morning Review**: Log in → Check dashboard → Review critical alerts → Check overnight donations
+2. **Monthly Reporting**: Navigate to Reports → Select date range → Generate impact report → Export PDF → Email to board
+3. **User Management**: Users tab → Create new user → Assign role (Volunteer) → Send invitation email → Enable MFA requirement
+4. **Compliance Check**: Security tab → Review audit logs → Check PII access patterns → Verify encryption status
+
+**Success Metrics for Sarah**:
+- Generate monthly board reports in < 10 minutes (down from 2 hours)
+- Zero compliance violations or data breaches
+- 100% audit trail for all financial transactions
+- Board satisfaction with data visibility and reporting
+
+---
+
+##### Persona 2: Marcus Johnson - Food Programs Manager (Donor Coordinator Role)
+
+**Background**: Marcus manages relationships with 50+ corporate donors and handles all incoming donations. He's worked at Grace Community Food Bank for 3 years and previously worked in restaurant management. Marcus is outgoing, detail-oriented, and excellent at building relationships. He coordinates pickup schedules with donors and ensures all donations are properly documented for tax receipts.
+
+**Technical Proficiency**: Moderate to high. Uses smartphone apps extensively, comfortable with CRM systems, and learns new software quickly.
+
+**Goals & Motivations**:
+- Build and maintain strong relationships with corporate donors
+- Maximize donation volume through excellent service and communication
+- Ensure accurate records for donor tax receipts (critical for ongoing donations)
+- Minimize food waste by quickly processing perishable donations
+- Track donor patterns to anticipate seasonal fluctuations
+- Recognize and thank top donors regularly
+
+**Pain Points**:
+- Currently uses a mix of Google Sheets, email, and paper forms
+- Difficult to generate donor tax receipts at year-end (manual process)
+- No easy way to see donor history during phone calls
+- Can't quickly check if expired items were received (compliance issue)
+- Missing opportunities to thank donors because data is scattered
+- Spending hours each week reconciling donation records
+
+**Daily Responsibilities**:
+- Record incoming donations (10-15 per day)
+- Upload donation receipts and photos to system
+- Contact donors to schedule pickups
+- Generate tax receipts for donors upon request
+- Track expiration dates and ensure FIFO processing
+- Run weekly donation reports for management
+- Update donor contact information and preferences
+
+**How SavingGrace Helps**:
+- **Quick Donation Entry**: Mobile-friendly form to record donations on the go
+- **Receipt Upload**: Snap photo of donation receipt → Upload to S3 → Automatically attached to record
+- **Donor Profiles**: Complete history at fingertips during donor conversations
+- **Tax Receipt Generation**: One-click generation of year-end tax receipts
+- **Expiration Alerts**: Automatic notifications for items expiring in 3-7 days
+- **Donor Reports**: Track top donors, donation frequency, and seasonal patterns
+
+**Typical Workflows**:
+1. **Recording Donation**: Donors → Select donor → New Donation → Enter items (name, quantity, expiration) → Upload receipt photo → Save → System generates confirmation email to donor
+2. **Donor Call**: Donor calls → Pull up donor profile → View complete donation history → Note preferred donation types → Schedule next pickup
+3. **Year-End Receipts**: Reports → Select "Annual Donor Receipts" → Filter by year → Select donors → Generate PDFs → Email automatically
+4. **Expiration Check**: Dashboard → View "Expiring Soon" alert (red badge) → Click → See all items expiring in 3 days → Prioritize for distribution
+
+**Success Metrics for Marcus**:
+- Reduce donation data entry time by 50%
+- Generate year-end receipts in 1 day (down from 1 week)
+- Zero missed expirations due to tracking errors
+- Increase repeat donations by 20% through better donor service
+
+---
+
+##### Persona 3: Jennifer Rodriguez - Distribution Coordinator (Distribution Manager Role)
+
+**Background**: Jennifer oversees all food distributions and manages relationships with 300+ recipient families. She's been with the organization for 5 years and has a background in social work. Jennifer is empathetic, organized, and passionate about serving her community with dignity. She coordinates twice-weekly distribution events and manages a team of 10 volunteers.
+
+**Technical Proficiency**: Moderate. Comfortable with databases and spreadsheets. Prefers desktop computers but uses tablet for field work during distributions.
+
+**Goals & Motivations**:
+- Ensure fair and efficient distribution to all eligible families
+- Protect recipient privacy and maintain confidentiality
+- Maximize food utilization (minimize waste, match dietary needs)
+- Coordinate volunteers effectively during distribution events
+- Track household needs and adjust distributions accordingly
+- Demonstrate program impact to funders
+
+**Pain Points**:
+- Current paper-based system makes it hard to verify recipient eligibility on the spot
+- No real-time inventory visibility during distribution events (over-promises and under-delivers)
+- Can't easily track what each family received for dietary tracking
+- Difficult to identify families who haven't picked up food recently
+- Privacy concerns with paper forms containing PII left on clipboards
+- Spending 2+ hours after each distribution manually entering data
+
+**Daily Responsibilities**:
+- Plan distribution events based on available inventory
+- Verify recipient eligibility and update household information
+- Create distribution manifests (what goes to each family)
+- Coordinate volunteers and assign distribution roles
+- Mark distributions complete and update inventory in real-time
+- Follow up with families who missed distributions
+- Generate distribution reports for management and funders
+
+**How SavingGrace Helps**:
+- **Recipient Privacy**: PII masked in list views, full details only on individual profiles
+- **Real-Time Inventory**: Check available quantities before committing to distributions
+- **Distribution Manifests**: Printable lists showing what each family receives
+- **Tablet-Friendly**: Mark distributions complete from tablet during events
+- **Dietary Matching**: Filter recipients by dietary restrictions when planning distributions
+- **Distribution History**: See what each family received in past 6 months
+
+**Typical Workflows**:
+1. **Planning Distribution**: Inventory → Check available items → Distributions → Create New Event → Select date/location → Choose recipients (filter by dietary needs) → Assign inventory items → Generate manifest → Print
+2. **During Distribution**: Open distribution on tablet → Mark families as "picked up" in real-time → Adjust quantities if needed → Note any special circumstances
+3. **Completing Distribution**: Click "Complete Distribution" → System updates inventory automatically → Generate summary report → Email to team
+4. **Recipient Management**: Recipients → Search by name → View profile → Update household size → Check distribution history → Note dietary changes → Save
+
+**Success Metrics for Jennifer**:
+- Reduce post-distribution data entry from 2 hours to 15 minutes
+- Zero privacy violations through digital security
+- 95% inventory accuracy (no over-committing)
+- Increase recipient satisfaction through better dietary matching
+
+---
+
+##### Persona 4: David Park - Volunteer Coordinator (Volunteer Role)
+
+**Background**: David is a retired teacher who volunteers 15 hours per week at Grace Community Food Bank. He helps with donation receiving, distribution events, and general warehouse organization. David is tech-savvy for his age (68) but prefers simple, straightforward interfaces. He's reliable, punctual, and takes pride in his volunteer work.
+
+**Technical Proficiency**: Low to moderate. Can use email, simple websites, and smartphone apps. Needs clear instructions and gets frustrated with complex interfaces.
+
+**Goals & Motivations**:
+- Give back to his community in retirement
+- Help ensure accurate record-keeping during distributions
+- Learn new skills and stay mentally active
+- Work efficiently so he can maximize his impact
+- Feel confident using technology without making errors
+
+**Pain Points**:
+- Current system requires too much training; afraid of making mistakes
+- Can't see real-time information during distribution events
+- Wants to help but doesn't want write access to critical data
+- Needs simple checklist-style interfaces
+- Worried about accidentally deleting or changing important records
+
+**Daily Responsibilities**:
+- Check in recipients during distribution events
+- View inventory levels to answer questions
+- Mark distribution line items as "picked up"
+- Verify recipient information (read-only)
+- View donation history if donors ask questions
+- Report any issues to coordinators
+
+**How SavingGrace Helps**:
+- **Read-Only Dashboard**: View all information without fear of changing data
+- **Simple Distribution Checklist**: Check boxes as families pick up food
+- **Large, Clear Buttons**: Easy-to-tap interface for tablet use
+- **No Complex Forms**: Can only mark items complete, can't edit or delete
+- **Real-Time Inventory**: Answer donor questions about current needs
+- **Clear Visual Indicators**: Color-coded alerts (red/yellow/green) for expirations
+
+**Typical Workflows**:
+1. **Distribution Day**: Log in on tablet → Open today's distribution → See checklist of families → Check families off as they arrive → Mark as complete
+2. **Answering Questions**: Donor asks "What do you need most?" → Check Inventory Dashboard → See "Low Stock: Canned Protein" → Provide answer
+3. **Viewing Reports**: Dashboard → View current inventory levels → View distribution schedule → View recent donations
+
+**Success Metrics for David**:
+- Feel confident using the system without supervision
+- Zero errors or accidental data changes
+- Complete distribution check-ins in < 30 seconds per family
+- Enjoy volunteering more with less paperwork
+
+---
+
+##### Persona 5: Amanda Foster - Board Member / Grant Writer (Read-Only Role)
+
+**Background**: Amanda serves on the board of directors and occasionally writes grant applications. She's a marketing executive at a tech company and brings corporate best practices to the non-profit. Amanda is highly analytical, data-driven, and comfortable with dashboards and analytics tools. She volunteers 5-10 hours per month and needs remote access to data for grant writing and board reporting.
+
+**Technical Proficiency**: High. Uses business intelligence tools daily in her corporate role. Expects modern, intuitive dashboards with export capabilities.
+
+**Goals & Motivations**:
+- Write compelling grant applications with accurate data
+- Provide board oversight and ensure operational excellence
+- Identify trends and opportunities for improvement
+- Track key performance indicators (KPIs) for strategic planning
+- Ensure donor funds are used efficiently
+- Support executive director with data-driven insights
+
+**Pain Points**:
+- Currently relies on Sarah to manually compile reports
+- Can't access data remotely when writing grant applications
+- No standardized metrics or KPIs to track over time
+- Difficult to compare performance month-over-month or year-over-year
+- Can't drill down into data to answer specific grant questions
+- Spending grant writing time waiting for data instead of writing
+
+**Daily/Weekly Responsibilities**:
+- Review monthly performance dashboards
+- Generate reports for board meetings
+- Compile data for grant applications
+- Analyze trends and identify operational improvements
+- Export data for external audits
+- Monitor waste reduction metrics
+
+**How SavingGrace Helps**:
+- **Interactive Dashboards**: Real-time KPIs without bothering staff
+- **Date Range Filters**: Compare this month vs. last month, YOY trends
+- **Export Capabilities**: Download CSV/PDF reports for grant applications
+- **Impact Metrics**: Pounds distributed, families served, waste reduction percentages
+- **Remote Access**: View dashboards from home while writing grants
+- **Scheduled Reports**: Receive monthly email summary automatically
+
+**Typical Workflows**:
+1. **Board Meeting Prep**: Log in → Dashboard → Set date range (last quarter) → Review key metrics → Export to PDF → Include in board packet
+2. **Grant Writing**: Open grant application → Need specific data → Log into SavingGrace → Reports → Filter by date range and metric → Export to CSV → Import into grant spreadsheet
+3. **Trend Analysis**: Dashboard → Select "Year-over-Year View" → Compare donations received → Identify seasonal patterns → Make recommendations to Sarah
+4. **Impact Reporting**: Reports → Impact Report → Select last 12 months → View "Recipients Served: 5,234" → "Pounds Distributed: 45,000" → "Waste Reduction: 23%" → Export for annual report
+
+**Success Metrics for Amanda**:
+- Write grant applications 50% faster with instant data access
+- Provide board with professional dashboards instead of PowerPoint slides
+- Identify 2-3 operational improvements per year through data analysis
+- Win 20% more grants through compelling, data-driven storytelling
+
+---
+
 #### Authentication Requirements
 - Email/password authentication via Cognito
 - Multi-factor authentication (MFA) for admins
