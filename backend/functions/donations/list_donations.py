@@ -99,7 +99,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if status and status not in VALID_STATUSES:
             raise ValidationError(
                 message=f"status must be one of: {', '.join(VALID_STATUSES)}",
-                details={"status": status}
+                details={"status": status},
             )
 
         # Validate dates if provided
@@ -177,26 +177,24 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Format response items
         donations = []
         for item in result["items"]:
-            donations.append({
-                "donation_id": item["donation_id"],
-                "donor_id": item["donor_id"],
-                "status": item["status"],
-                "notes": item.get("notes"),
-                "receipt_url": item.get("receipt_url"),
-                "created_at": item["created_at"],
-                "updated_at": item["updated_at"],
-            })
+            donations.append(
+                {
+                    "donation_id": item["donation_id"],
+                    "donor_id": item["donor_id"],
+                    "status": item["status"],
+                    "notes": item.get("notes"),
+                    "receipt_url": item.get("receipt_url"),
+                    "created_at": item["created_at"],
+                    "updated_at": item["updated_at"],
+                }
+            )
 
         # Prepare pagination token
         pagination_token = None
         if result["last_evaluated_key"]:
             pagination_token = encode_pagination_token(result["last_evaluated_key"])
 
-        logger.info(
-            "Listed donations",
-            count=len(donations),
-            has_more=pagination_token is not None
-        )
+        logger.info("Listed donations", count=len(donations), has_more=pagination_token is not None)
 
         # Note: total_count is approximate since we can't efficiently count with filters
         # For now, return the current count

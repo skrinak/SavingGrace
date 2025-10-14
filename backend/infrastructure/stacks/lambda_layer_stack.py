@@ -14,9 +14,7 @@ import os
 class LambdaLayerStack(Stack):
     """Stack for Lambda shared layer"""
 
-    def __init__(
-        self, scope: Construct, construct_id: str, environment: str, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, construct_id: str, environment: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # =========================================================================

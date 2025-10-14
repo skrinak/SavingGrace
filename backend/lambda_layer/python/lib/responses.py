@@ -77,16 +77,18 @@ def error_response(
     if headers:
         default_headers.update(headers)
 
-    error_body = {
-        "success": False,
-        "error": {
-            "message": message,
-            "code": error_code or f"ERROR_{status_code}",
-        },
+    error_dict: Dict[str, Any] = {
+        "message": message,
+        "code": error_code or f"ERROR_{status_code}",
     }
 
     if details:
-        error_body["error"]["details"] = details
+        error_dict["details"] = details
+
+    error_body: Dict[str, Any] = {
+        "success": False,
+        "error": error_dict,
+    }
 
     return {
         "statusCode": status_code,
@@ -117,7 +119,7 @@ def paginated_response(
     Returns:
         API Gateway response object
     """
-    pagination = {
+    pagination: Dict[str, Any] = {
         "page": page,
         "page_size": page_size,
         "total_count": total_count,

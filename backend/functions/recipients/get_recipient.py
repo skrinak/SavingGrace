@@ -50,10 +50,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         )
 
         # Get recipient from DynamoDB
-        recipient = db.get_item(
-            pk=f"RECIPIENT#{recipient_id}",
-            sk="PROFILE"
-        )
+        recipient = db.get_item(pk=f"RECIPIENT#{recipient_id}", sk="PROFILE")
 
         logger.info(
             "Recipient retrieved successfully",
@@ -61,7 +58,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         )
 
         # Return response (remove DynamoDB keys)
-        response_data = {k: v for k, v in recipient.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]}
+        response_data = {
+            k: v for k, v in recipient.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]
+        }
 
         return success_response(response_data)
 

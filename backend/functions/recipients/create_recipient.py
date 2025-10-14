@@ -47,24 +47,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Validate required fields
         Validator.validate_required_fields(
-            body,
-            ["name", "contact_name", "contact_phone", "address", "household_size"]
+            body, ["name", "contact_name", "contact_phone", "address", "household_size"]
         )
 
         # Validate name
-        name = Validator.validate_string(
-            body.get("name"),
-            "name",
-            min_length=2,
-            max_length=100
-        )
+        name = Validator.validate_string(body.get("name"), "name", min_length=2, max_length=100)
 
         # Validate contact_name
         contact_name = Validator.validate_string(
-            body.get("contact_name"),
-            "contact_name",
-            min_length=2,
-            max_length=100
+            body.get("contact_name"), "contact_name", min_length=2, max_length=100
         )
 
         # Validate contact_phone
@@ -77,17 +68,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Validate address
         address = Validator.validate_string(
-            body.get("address"),
-            "address",
-            min_length=5,
-            max_length=500
+            body.get("address"), "address", min_length=5, max_length=500
         )
 
         # Validate household_size
         household_size = Validator.validate_number(
-            body.get("household_size"),
-            "household_size",
-            min_value=1
+            body.get("household_size"), "household_size", min_value=1
         )
 
         # Validate needs (optional list)
@@ -98,11 +84,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Validate notes (optional)
         notes = None
         if body.get("notes"):
-            notes = Validator.validate_string(
-                body.get("notes"),
-                "notes",
-                max_length=1000
-            )
+            notes = Validator.validate_string(body.get("notes"), "notes", max_length=1000)
 
         # Generate recipient ID
         recipient_id = str(uuid.uuid4())
@@ -139,7 +121,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         )
 
         # Return response (remove DynamoDB keys)
-        response_data = {k: v for k, v in recipient.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]}
+        response_data = {
+            k: v for k, v in recipient.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]
+        }
 
         return success_response(response_data, status_code=201)
 

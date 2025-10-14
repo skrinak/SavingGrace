@@ -102,7 +102,9 @@ class AuthHelper:
             "sub": claims.get("sub"),
             "email": claims.get("email"),
             "role": claims.get("custom:role", "ReadOnly"),
-            "groups": claims.get("cognito:groups", "").split(",") if claims.get("cognito:groups") else [],
+            "groups": claims.get("cognito:groups", "").split(",")
+            if claims.get("cognito:groups")
+            else [],
             "given_name": claims.get("given_name"),
             "family_name": claims.get("family_name"),
         }
@@ -216,7 +218,7 @@ def require_role(required_role: str):
         @wraps(func)
         def wrapper(event, context):
             user = get_user_from_event(event)
-            if not AuthHelper.has_role(user.get("role"), required_role):
+            if not AuthHelper.has_role(user.get("role", "ReadOnly"), required_role):
                 raise AuthorizationError(
                     message=f"Role {required_role} or higher required",
                     required_role=required_role,
@@ -245,7 +247,7 @@ def require_permission(permission: str):
         @wraps(func)
         def wrapper(event, context):
             user = get_user_from_event(event)
-            if not AuthHelper.has_permission(user.get("role"), permission):
+            if not AuthHelper.has_permission(user.get("role", "ReadOnly"), permission):
                 raise AuthorizationError(
                     message=f"Permission {permission} required",
                 )

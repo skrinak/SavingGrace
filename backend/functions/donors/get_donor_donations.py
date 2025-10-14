@@ -73,11 +73,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         user = get_user_from_event(event)
         donor_id = event.get("pathParameters", {}).get("donorId")
 
-        logger.log_api_request(
-            "GET",
-            f"/donors/{donor_id}/donations",
-            user_id=user.get("sub")
-        )
+        logger.log_api_request("GET", f"/donors/{donor_id}/donations", user_id=user.get("sub"))
 
         # Validate donor_id
         if not donor_id:
@@ -103,17 +99,14 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # First, verify donor exists
         try:
             db_verify_start = datetime.utcnow()
-            db.get_item(
-                pk=f"DONOR#{donor_id}",
-                sk="PROFILE"
-            )
+            db.get_item(pk=f"DONOR#{donor_id}", sk="PROFILE")
             db_verify_duration = (datetime.utcnow() - db_verify_start).total_seconds() * 1000
             logger.log_database_operation(
                 "get_item",
                 os.environ["TABLE_NAME"],
                 db_verify_duration,
                 operation="verify_donor",
-                donor_id=donor_id
+                donor_id=donor_id,
             )
         except NotFoundError:
             raise NotFoundError(resource="Donor", resource_id=donor_id)
@@ -126,7 +119,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 raise SavingGraceError(
                     message="Invalid pagination token",
                     status_code=400,
-                    error_code="VALIDATION_ERROR"
+                    error_code="VALIDATION_ERROR",
                 )
 
         # Query donations using GSI ByDonor
@@ -150,7 +143,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             index_name="GSI2",
             limit=page_size,
             exclusive_start_key=exclusive_start_key,
-            scan_forward=False  # Most recent donations first
+            scan_forward=False,  # Most recent donations first
         )
 
         db_duration = (datetime.utcnow() - db_start).total_seconds() * 1000
@@ -160,14 +153,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             os.environ["TABLE_NAME"],
             db_duration,
             donor_id=donor_id,
-            donation_count=result["count"]
+            donation_count=result["count"],
         )
 
         # Remove internal fields from response
         donations = []
         for donation in result["items"]:
-            clean_donation = {k: v for k, v in donation.items()
-                            if k not in ["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK"]}
+            clean_donation = {
+                k: v
+                for k, v in donation.items()
+                if k not in ["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK"]
+            }
             donations.append(clean_donation)
 
         # Encode next token if pagination continues
@@ -180,19 +176,14 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Log response
         duration = (datetime.utcnow() - start_time).total_seconds() * 1000
-        logger.log_api_response(
-            200,
-            duration,
-            donor_id=donor_id,
-            donation_count=len(donations)
-        )
+        logger.log_api_response(200, duration, donor_id=donor_id, donation_count=len(donations))
 
         return paginated_response(
             items=donations,
             total_count=total_count,
             page=page,
             page_size=page_size,
-            next_token=encoded_next_token
+            next_token=encoded_next_token,
         )
 
     except SavingGraceError as e:

@@ -58,12 +58,12 @@ def extract_s3_key_from_url(url: str, bucket_name: str) -> str:
                 # Virtual-hosted-style URL
                 key_start = url.find(".amazonaws.com/")
                 if key_start != -1:
-                    return url[key_start + 15:]
+                    return url[key_start + 15 :]
             elif "/s3." in url or "/s3-" in url:
                 # Path-style URL
                 bucket_start = url.find(f"/{bucket_name}/")
                 if bucket_start != -1:
-                    return url[bucket_start + len(bucket_name) + 2:]
+                    return url[bucket_start + len(bucket_name) + 2 :]
 
     # If we can't parse it, assume it's a key
     return url
@@ -109,26 +109,20 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not receipt_url:
             raise ValidationError(
                 message="No receipt available for this donation",
-                details={"donation_id": donation_id}
+                details={"donation_id": donation_id},
             )
 
         # Get bucket name from environment
         bucket_name = os.environ.get("RECEIPTS_BUCKET_NAME")
         if not bucket_name:
             logger.error("RECEIPTS_BUCKET_NAME environment variable not set")
-            raise SavingGraceError(
-                message="Receipt storage not configured",
-                status_code=500
-            )
+            raise SavingGraceError(message="Receipt storage not configured", status_code=500)
 
         # Extract S3 key from receipt URL
         s3_key = extract_s3_key_from_url(receipt_url, bucket_name)
 
         logger.info(
-            "Generating pre-signed URL",
-            donation_id=donation_id,
-            bucket=bucket_name,
-            key=s3_key
+            "Generating pre-signed URL", donation_id=donation_id, bucket=bucket_name, key=s3_key
         )
 
         # Generate pre-signed URL (expires in 1 hour)
@@ -140,15 +134,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
         except ClientError as e:
             logger.error(
-                "Failed to generate pre-signed URL",
-                error=e,
-                bucket=bucket_name,
-                key=s3_key
+                "Failed to generate pre-signed URL", error=e, bucket=bucket_name, key=s3_key
             )
             raise SavingGraceError(
-                message="Failed to generate receipt URL",
-                status_code=500,
-                details={"error": str(e)}
+                message="Failed to generate receipt URL", status_code=500, details={"error": str(e)}
             )
 
         # Calculate expiration time

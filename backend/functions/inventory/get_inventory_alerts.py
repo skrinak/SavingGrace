@@ -21,11 +21,7 @@ from lib.validation import Validator
 logger = get_logger(__name__)
 
 # Valid alert types
-VALID_ALERT_TYPES = [
-    "low_stock",
-    "expiring_soon",
-    "expired"
-]
+VALID_ALERT_TYPES = ["low_stock", "expiring_soon", "expired"]
 
 # Default thresholds
 LOW_STOCK_THRESHOLD = 10
@@ -48,9 +44,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Log request
         user = get_user_from_event(event)
         logger.info(
-            "Get inventory alerts request",
-            user_id=user.get("sub"),
-            user_role=user.get("role")
+            "Get inventory alerts request", user_id=user.get("sub"), user_role=user.get("role")
         )
 
         # Extract query parameters
@@ -59,11 +53,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Validate alert type if provided
         if alert_type:
-            alert_type = Validator.validate_enum(
-                alert_type,
-                "alert_type",
-                VALID_ALERT_TYPES
-            )
+            alert_type = Validator.validate_enum(alert_type, "alert_type", VALID_ALERT_TYPES)
 
         # Initialize DynamoDB helper
         db = DynamoDBHelper()
@@ -85,9 +75,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
             elif check_type == "expiring_soon":
                 # Find items expiring within 7 days
-                expiring_soon_alerts = get_expiring_soon_alerts(
-                    db, now, EXPIRING_SOON_DAYS
-                )
+                expiring_soon_alerts = get_expiring_soon_alerts(db, now, EXPIRING_SOON_DAYS)
                 alerts.extend(expiring_soon_alerts)
 
             elif check_type == "expired":
@@ -95,44 +83,29 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 expired_alerts = get_expired_alerts(db, now_iso)
                 alerts.extend(expired_alerts)
 
-        logger.info(
-            "Retrieved inventory alerts",
-            alert_type=alert_type,
-            alert_count=len(alerts)
-        )
+        logger.info("Retrieved inventory alerts", alert_type=alert_type, alert_count=len(alerts))
 
         # Return alerts
-        return success_response({
-            "alerts": alerts,
-            "count": len(alerts),
-            "alert_type": alert_type,
-            "thresholds": {
-                "low_stock": LOW_STOCK_THRESHOLD,
-                "expiring_soon_days": EXPIRING_SOON_DAYS
+        return success_response(
+            {
+                "alerts": alerts,
+                "count": len(alerts),
+                "alert_type": alert_type,
+                "thresholds": {
+                    "low_stock": LOW_STOCK_THRESHOLD,
+                    "expiring_soon_days": EXPIRING_SOON_DAYS,
+                },
             }
-        })
+        )
 
     except SavingGraceError as e:
-        logger.error(
-            "SavingGrace error in get inventory alerts",
-            error=e,
-            error_code=e.error_code
-        )
+        logger.error("SavingGrace error in get inventory alerts", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
-        logger.error(
-            "Unexpected error in get inventory alerts",
-            error=e
-        )
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        logger.error("Unexpected error in get inventory alerts", error=e)
+        return error_response(message="Internal server error", status_code=500)
 
 
 def get_low_stock_alerts(db: DynamoDBHelper, threshold: int) -> List[Dict[str, Any]]:
@@ -151,33 +124,33 @@ def get_low_stock_alerts(db: DynamoDBHelper, threshold: int) -> List[Dict[str, A
     # Scan for items with quantity below threshold
     result = db.scan(
         filter_expression=(
-            Attr("PK").begins_with("INVENTORY#") &
-            Attr("quantity").lt(threshold) &
-            Attr("quantity").gte(0)
+            Attr("PK").begins_with("INVENTORY#")
+            & Attr("quantity").lt(threshold)
+            & Attr("quantity").gte(0)
         )
     )
 
     alerts = []
     for item in result.get("items", []):
-        alerts.append({
-            "alert_type": "low_stock",
-            "severity": "medium",
-            "item_id": item.get("item_id"),
-            "category": item.get("category"),
-            "item_name": item.get("name"),
-            "current_quantity": item.get("quantity"),
-            "threshold": threshold,
-            "unit": item.get("unit", "units"),
-            "message": f"{item.get('name')} is low in stock ({item.get('quantity')} {item.get('unit', 'units')} remaining)"
-        })
+        alerts.append(
+            {
+                "alert_type": "low_stock",
+                "severity": "medium",
+                "item_id": item.get("item_id"),
+                "category": item.get("category"),
+                "item_name": item.get("name"),
+                "current_quantity": item.get("quantity"),
+                "threshold": threshold,
+                "unit": item.get("unit", "units"),
+                "message": f"{item.get('name')} is low in stock ({item.get('quantity')} {item.get('unit', 'units')} remaining)",
+            }
+        )
 
     return alerts
 
 
 def get_expiring_soon_alerts(
-    db: DynamoDBHelper,
-    now: datetime,
-    days_ahead: int
+    db: DynamoDBHelper, now: datetime, days_ahead: int
 ) -> List[Dict[str, Any]]:
     """
     Get expiring soon alerts
@@ -200,11 +173,8 @@ def get_expiring_soon_alerts(
     # Query GSI ByExpiration for items expiring within the range
     result = db.query(
         key_condition=Key("GSI1PK").eq("INVENTORY"),
-        filter_expression=(
-            Attr("GSI1SK").gte(now_iso) &
-            Attr("GSI1SK").lte(future_iso)
-        ),
-        index_name="GSI1"
+        filter_expression=(Attr("GSI1SK").gte(now_iso) & Attr("GSI1SK").lte(future_iso)),
+        index_name="GSI1",
     )
 
     alerts = []
@@ -216,18 +186,20 @@ def get_expiring_soon_alerts(
                 exp_date = datetime.fromisoformat(expiration_date.replace("Z", "+00:00"))
                 days_until = (exp_date - now).days
 
-                alerts.append({
-                    "alert_type": "expiring_soon",
-                    "severity": "high" if days_until <= 3 else "medium",
-                    "item_id": item.get("item_id"),
-                    "category": item.get("category"),
-                    "item_name": item.get("name"),
-                    "quantity": item.get("quantity"),
-                    "unit": item.get("unit", "units"),
-                    "expiration_date": expiration_date,
-                    "days_until_expiration": days_until,
-                    "message": f"{item.get('name')} expires in {days_until} days"
-                })
+                alerts.append(
+                    {
+                        "alert_type": "expiring_soon",
+                        "severity": "high" if days_until <= 3 else "medium",
+                        "item_id": item.get("item_id"),
+                        "category": item.get("category"),
+                        "item_name": item.get("name"),
+                        "quantity": item.get("quantity"),
+                        "unit": item.get("unit", "units"),
+                        "expiration_date": expiration_date,
+                        "days_until_expiration": days_until,
+                        "message": f"{item.get('name')} expires in {days_until} days",
+                    }
+                )
             except (ValueError, AttributeError):
                 # Skip items with invalid dates
                 pass
@@ -252,23 +224,25 @@ def get_expired_alerts(db: DynamoDBHelper, now_iso: str) -> List[Dict[str, Any]]
     result = db.query(
         key_condition=Key("GSI1PK").eq("INVENTORY"),
         filter_expression=Attr("GSI1SK").lt(now_iso),
-        index_name="GSI1"
+        index_name="GSI1",
     )
 
     alerts = []
     for item in result.get("items", []):
         expiration_date = item.get("expiration_date")
         if expiration_date:
-            alerts.append({
-                "alert_type": "expired",
-                "severity": "critical",
-                "item_id": item.get("item_id"),
-                "category": item.get("category"),
-                "item_name": item.get("name"),
-                "quantity": item.get("quantity"),
-                "unit": item.get("unit", "units"),
-                "expiration_date": expiration_date,
-                "message": f"{item.get('name')} has expired and should be removed"
-            })
+            alerts.append(
+                {
+                    "alert_type": "expired",
+                    "severity": "critical",
+                    "item_id": item.get("item_id"),
+                    "category": item.get("category"),
+                    "item_name": item.get("name"),
+                    "quantity": item.get("quantity"),
+                    "unit": item.get("unit", "units"),
+                    "expiration_date": expiration_date,
+                    "message": f"{item.get('name')} has expired and should be removed",
+                }
+            )
 
     return alerts

@@ -35,7 +35,7 @@ def validate_update_input(data: Dict[str, Any]) -> None:
     if not any(key in data for key in ["status", "distribution_date", "notes"]):
         raise ValidationError(
             message="At least one field to update must be provided",
-            details={"allowed_fields": ["status", "distribution_date", "notes"]}
+            details={"allowed_fields": ["status", "distribution_date", "notes"]},
         )
 
     # Validate status (optional)
@@ -77,8 +77,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         if not distribution_id:
             raise ValidationError(
-                message="Missing distributionId in path",
-                details={"parameter": "distributionId"}
+                message="Missing distributionId in path", details={"parameter": "distributionId"}
             )
 
         # Validate distribution_id format
@@ -90,7 +89,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         validate_update_input(data)
 
-        logger.info("Updating distribution", distribution_id=distribution_id, updates=list(data.keys()))
+        logger.info(
+            "Updating distribution", distribution_id=distribution_id, updates=list(data.keys())
+        )
 
         # Prepare updates
         pk = f"DISTRIBUTION#{distribution_id}"
@@ -128,7 +129,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Distribution updated successfully",
             distribution_id=distribution_id,
-            status=updated_distribution.get("status")
+            status=updated_distribution.get("status"),
         )
 
         # Prepare response
@@ -149,14 +150,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     except SavingGraceError as e:
         logger.error("Failed to update distribution", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
         logger.error("Unexpected error updating distribution", error=e)
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        return error_response(message="Internal server error", status_code=500)

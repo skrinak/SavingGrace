@@ -22,14 +22,16 @@ logger = get_logger(__name__)
 
 
 @require_role("DonorCoordinator")
-@validate_input({
-    "name": {"type": "string", "required": False, "min_length": 2, "max_length": 100},
-    "email": {"type": "email", "required": False},
-    "phone": {"type": "string", "required": False, "min_length": 10, "max_length": 20},
-    "address": {"type": "string", "required": False, "max_length": 500},
-    "organization": {"type": "string", "required": False, "max_length": 200},
-    "notes": {"type": "string", "required": False, "max_length": 1000},
-})
+@validate_input(
+    {
+        "name": {"type": "string", "required": False, "min_length": 2, "max_length": 100},
+        "email": {"type": "email", "required": False},
+        "phone": {"type": "string", "required": False, "min_length": 10, "max_length": 20},
+        "address": {"type": "string", "required": False, "max_length": 500},
+        "organization": {"type": "string", "required": False, "max_length": 200},
+        "notes": {"type": "string", "required": False, "max_length": 1000},
+    }
+)
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Update an existing donor
@@ -48,11 +50,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         user = get_user_from_event(event)
         donor_id = event.get("pathParameters", {}).get("donorId")
 
-        logger.log_api_request(
-            "PUT",
-            f"/donors/{donor_id}",
-            user_id=user.get("sub")
-        )
+        logger.log_api_request("PUT", f"/donors/{donor_id}", user_id=user.get("sub"))
 
         # Validate donor_id
         if not donor_id:
@@ -66,7 +64,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             raise SavingGraceError(
                 message="No fields provided to update",
                 status_code=400,
-                error_code="VALIDATION_ERROR"
+                error_code="VALIDATION_ERROR",
             )
 
         # Initialize DynamoDB helper
@@ -91,23 +89,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Update donor in DynamoDB
         db_start = datetime.utcnow()
-        updated_donor = db.update_item(
-            pk=f"DONOR#{donor_id}",
-            sk="PROFILE",
-            updates=updates
-        )
+        updated_donor = db.update_item(pk=f"DONOR#{donor_id}", sk="PROFILE", updates=updates)
         db_duration = (datetime.utcnow() - db_start).total_seconds() * 1000
 
         logger.log_database_operation(
-            "update_item",
-            os.environ["TABLE_NAME"],
-            db_duration,
-            donor_id=donor_id
+            "update_item", os.environ["TABLE_NAME"], db_duration, donor_id=donor_id
         )
 
         # Remove internal fields from response
-        response_donor = {k: v for k, v in updated_donor.items()
-                         if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]}
+        response_donor = {
+            k: v for k, v in updated_donor.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]
+        }
 
         # Log response
         duration = (datetime.utcnow() - start_time).total_seconds() * 1000

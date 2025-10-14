@@ -39,11 +39,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         user = get_user_from_event(event)
         donor_id = event.get("pathParameters", {}).get("donorId")
 
-        logger.log_api_request(
-            "GET",
-            f"/donors/{donor_id}",
-            user_id=user.get("sub")
-        )
+        logger.log_api_request("GET", f"/donors/{donor_id}", user_id=user.get("sub"))
 
         # Validate donor_id
         if not donor_id:
@@ -54,22 +50,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Get donor from DynamoDB
         db_start = datetime.utcnow()
-        donor = db.get_item(
-            pk=f"DONOR#{donor_id}",
-            sk="PROFILE"
-        )
+        donor = db.get_item(pk=f"DONOR#{donor_id}", sk="PROFILE")
         db_duration = (datetime.utcnow() - db_start).total_seconds() * 1000
 
         logger.log_database_operation(
-            "get_item",
-            os.environ["TABLE_NAME"],
-            db_duration,
-            donor_id=donor_id
+            "get_item", os.environ["TABLE_NAME"], db_duration, donor_id=donor_id
         )
 
         # Remove internal fields from response
-        response_donor = {k: v for k, v in donor.items()
-                         if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]}
+        response_donor = {
+            k: v for k, v in donor.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]
+        }
 
         # Log response
         duration = (datetime.utcnow() - start_time).total_seconds() * 1000

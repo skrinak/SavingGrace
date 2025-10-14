@@ -22,7 +22,7 @@ class ApiStack(Stack):
         construct_id: str,
         environment: str,
         user_pool: cognito.UserPool,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -33,7 +33,9 @@ class ApiStack(Stack):
             self,
             "ApiLogs",
             log_group_name=f"/aws/apigateway/savinggrace-{environment}",
-            retention=logs.RetentionDays.ONE_MONTH if environment == "dev" else logs.RetentionDays.THREE_MONTHS,
+            retention=logs.RetentionDays.ONE_MONTH
+            if environment == "dev"
+            else logs.RetentionDays.THREE_MONTHS,
         )
 
         # =========================================================================

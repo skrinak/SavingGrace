@@ -96,7 +96,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 raise SavingGraceError(
                     message="Invalid pagination token",
                     status_code=400,
-                    error_code="VALIDATION_ERROR"
+                    error_code="VALIDATION_ERROR",
                 )
 
         # Query using GSI1 (DonorsByName) for efficient listing
@@ -111,7 +111,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             result = db.scan(
                 filter_expression=filter_expr,
                 limit=page_size,
-                exclusive_start_key=exclusive_start_key
+                exclusive_start_key=exclusive_start_key,
             )
         else:
             # Use GSI query for efficient listing without search
@@ -119,7 +119,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 key_condition=Key("GSI1PK").eq("DONORS"),
                 index_name="GSI1",
                 limit=page_size,
-                exclusive_start_key=exclusive_start_key
+                exclusive_start_key=exclusive_start_key,
             )
 
         db_duration = (datetime.utcnow() - db_start).total_seconds() * 1000
@@ -128,14 +128,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "query" if not search else "scan",
             os.environ["TABLE_NAME"],
             db_duration,
-            item_count=result["count"]
+            item_count=result["count"],
         )
 
         # Remove internal fields from response
         donors = []
         for donor in result["items"]:
-            clean_donor = {k: v for k, v in donor.items()
-                          if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]}
+            clean_donor = {
+                k: v for k, v in donor.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]
+            }
             donors.append(clean_donor)
 
         # Encode next token if pagination continues
@@ -149,18 +150,14 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Log response
         duration = (datetime.utcnow() - start_time).total_seconds() * 1000
-        logger.log_api_response(
-            200,
-            duration,
-            donor_count=len(donors)
-        )
+        logger.log_api_response(200, duration, donor_count=len(donors))
 
         return paginated_response(
             items=donors,
             total_count=total_count,
             page=page,
             page_size=page_size,
-            next_token=encoded_next_token
+            next_token=encoded_next_token,
         )
 
     except SavingGraceError as e:

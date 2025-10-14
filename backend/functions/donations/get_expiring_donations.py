@@ -80,10 +80,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Validate days
         if days < 1 or days > 365:
-            raise ValidationError(
-                message="days must be between 1 and 365",
-                details={"days": days}
-            )
+            raise ValidationError(message="days must be between 1 and 365", details={"days": days})
 
         # Pagination parameters
         page = int(query_params.get("page", 1))
@@ -104,12 +101,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         now_str = now.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
 
-        logger.info(
-            "Querying expiring items",
-            days=days,
-            start_date=now_str,
-            end_date=end_date_str
-        )
+        logger.info("Querying expiring items", days=days, start_date=now_str, end_date=end_date_str)
 
         # Decode pagination token if provided
         exclusive_start_key = None
@@ -119,9 +111,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 raise ValidationError(message="Invalid next_token")
 
         # Query items expiring within the date range using GSI3 (ItemsByExpiration)
-        key_condition = Key("GSI3PK").eq("ITEMS") & Key("GSI3SK").between(
-            now_str, end_date_str
-        )
+        key_condition = Key("GSI3PK").eq("ITEMS") & Key("GSI3SK").between(now_str, end_date_str)
 
         result = db.query(
             key_condition=key_condition,
@@ -134,15 +124,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Format response items
         expiring_items = []
         for item in result["items"]:
-            expiring_items.append({
-                "donation_id": item["donation_id"],
-                "item_index": item["item_index"],
-                "name": item["name"],
-                "category": item["category"],
-                "quantity": item["quantity"],
-                "unit": item["unit"],
-                "expiration_date": item["expiration_date"],
-            })
+            expiring_items.append(
+                {
+                    "donation_id": item["donation_id"],
+                    "item_index": item["item_index"],
+                    "name": item["name"],
+                    "category": item["category"],
+                    "quantity": item["quantity"],
+                    "unit": item["unit"],
+                    "expiration_date": item["expiration_date"],
+                }
+            )
 
         # Prepare pagination token
         pagination_token = None
@@ -152,7 +144,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Retrieved expiring items",
             count=len(expiring_items),
-            has_more=pagination_token is not None
+            has_more=pagination_token is not None,
         )
 
         return paginated_response(

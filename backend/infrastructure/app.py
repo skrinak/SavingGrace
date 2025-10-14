@@ -17,10 +17,7 @@ from stacks.monitoring_stack import MonitoringStack
 app = cdk.App()
 
 # Environment configuration
-env_us_west_2 = cdk.Environment(
-    account="921212210452",
-    region="us-west-2"
-)
+env_us_west_2 = cdk.Environment(account="921212210452", region="us-west-2")
 
 # Get environment from context (default to dev)
 environment = app.node.try_get_context("env") or "dev"

@@ -43,8 +43,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         if not distribution_id:
             raise ValidationError(
-                message="Missing distributionId in path",
-                details={"parameter": "distributionId"}
+                message="Missing distributionId in path", details={"parameter": "distributionId"}
             )
 
         # Validate distribution_id format
@@ -61,7 +60,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Distribution retrieved successfully",
             distribution_id=distribution_id,
-            status=distribution.get("status")
+            status=distribution.get("status"),
         )
 
         # Prepare response (exclude internal fields)
@@ -82,14 +81,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     except SavingGraceError as e:
         logger.error("Failed to retrieve distribution", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
         logger.error("Unexpected error retrieving distribution", error=e)
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        return error_response(message="Internal server error", status_code=500)

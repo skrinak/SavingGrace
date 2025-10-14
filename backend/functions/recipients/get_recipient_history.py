@@ -68,10 +68,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Check if recipient exists
         try:
-            db.get_item(
-                pk=f"RECIPIENT#{recipient_id}",
-                sk="PROFILE"
-            )
+            db.get_item(pk=f"RECIPIENT#{recipient_id}", sk="PROFILE")
         except NotFoundError:
             return error_response(
                 message=f"Recipient with ID '{recipient_id}' not found",
@@ -101,7 +98,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             filter_expression=filter_expr,
             index_name="GSI2",
             limit=page_size * page,  # Get enough items for pagination
-            scan_forward=False  # Most recent first
+            scan_forward=False,  # Most recent first
         )
 
         all_items = result["items"]
@@ -114,7 +111,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Clean up response data (remove DynamoDB keys)
         distributions = [
-            {k: v for k, v in item.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK"]}
+            {
+                k: v
+                for k, v in item.items()
+                if k not in ["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK"]
+            }
             for item in items
         ]
 

@@ -28,7 +28,7 @@ VALID_CATEGORIES = [
     "canned",
     "frozen",
     "beverages",
-    "other"
+    "other",
 ]
 
 
@@ -47,11 +47,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         # Log request
         user = get_user_from_event(event)
-        logger.info(
-            "List inventory request",
-            user_id=user.get("sub"),
-            user_role=user.get("role")
-        )
+        logger.info("List inventory request", user_id=user.get("sub"), user_role=user.get("role"))
 
         # Extract query parameters
         query_params = event.get("queryStringParameters") or {}
@@ -63,13 +59,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Validate pagination
         if page < 1:
             raise ValidationError(
-                message="page must be at least 1",
-                details={"field": "page", "value": page}
+                message="page must be at least 1", details={"field": "page", "value": page}
             )
         if page_size < 1 or page_size > 100:
             raise ValidationError(
                 message="page_size must be between 1 and 100",
-                details={"field": "page_size", "value": page_size}
+                details={"field": "page_size", "value": page_size},
             )
 
         # Parse filter parameters
@@ -78,19 +73,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Validate category filter if provided
         if category_filter:
-            category_filter = Validator.validate_enum(
-                category_filter,
-                "category",
-                VALID_CATEGORIES
-            )
+            category_filter = Validator.validate_enum(category_filter, "category", VALID_CATEGORIES)
 
         # Validate min_quantity if provided
         if min_quantity:
-            min_quantity = Validator.validate_number(
-                min_quantity,
-                "min_quantity",
-                min_value=0
-            )
+            min_quantity = Validator.validate_number(min_quantity, "min_quantity", min_value=0)
 
         # Initialize DynamoDB helper
         db = DynamoDBHelper()
@@ -108,7 +95,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             result = db.query(
                 key_condition=Key("PK").eq(f"INVENTORY#{category_filter}"),
                 filter_expression=filter_expression,
-                limit=page_size * page  # Get all items up to current page
+                limit=page_size * page,  # Get all items up to current page
             )
         else:
             # Scan all inventory items
@@ -119,7 +106,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
             result = db.scan(
                 filter_expression=filter_expr,
-                limit=page_size * page  # Get all items up to current page
+                limit=page_size * page,  # Get all items up to current page
             )
 
         all_items = result.get("items", [])
@@ -135,6 +122,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if result.get("last_evaluated_key"):
             # Encode the last evaluated key as base64 for next page
             import base64
+
             next_token = base64.b64encode(
                 json.dumps(result["last_evaluated_key"]).encode()
             ).decode()
@@ -146,7 +134,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             total_count=total_count,
             returned_count=len(paginated_items),
             category_filter=category_filter,
-            min_quantity=min_quantity
+            min_quantity=min_quantity,
         )
 
         # Return paginated response
@@ -155,34 +143,19 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             total_count=total_count,
             page=page,
             page_size=page_size,
-            next_token=next_token
+            next_token=next_token,
         )
 
     except ValueError as e:
         logger.error("Invalid parameter value", error=e)
         return error_response(
-            message="Invalid parameter value",
-            status_code=400,
-            details={"error": str(e)}
+            message="Invalid parameter value", status_code=400, details={"error": str(e)}
         )
     except SavingGraceError as e:
-        logger.error(
-            "SavingGrace error in list inventory",
-            error=e,
-            error_code=e.error_code
-        )
+        logger.error("SavingGrace error in list inventory", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
-        logger.error(
-            "Unexpected error in list inventory",
-            error=e
-        )
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        logger.error("Unexpected error in list inventory", error=e)
+        return error_response(message="Internal server error", status_code=500)

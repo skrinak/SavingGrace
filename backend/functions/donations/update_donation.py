@@ -99,9 +99,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
 
         logger.info(
-            "Updated donation",
-            donation_id=donation_id,
-            updated_fields=list(updates.keys())
+            "Updated donation", donation_id=donation_id, updated_fields=list(updates.keys())
         )
 
         return success_response(donation)

@@ -56,10 +56,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Check if recipient exists
         try:
-            db.get_item(
-                pk=f"RECIPIENT#{recipient_id}",
-                sk="PROFILE"
-            )
+            db.get_item(pk=f"RECIPIENT#{recipient_id}", sk="PROFILE")
         except NotFoundError:
             return error_response(
                 message=f"Recipient with ID '{recipient_id}' not found",
@@ -72,12 +69,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Validate and add name if provided
         if "name" in body:
-            name = Validator.validate_string(
-                body.get("name"),
-                "name",
-                min_length=2,
-                max_length=100
-            )
+            name = Validator.validate_string(body.get("name"), "name", min_length=2, max_length=100)
             updates["name"] = name
             # Update GSI1SK for searching
             updates["GSI1SK"] = name.lower()
@@ -85,10 +77,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Validate and add contact_name if provided
         if "contact_name" in body:
             updates["contact_name"] = Validator.validate_string(
-                body.get("contact_name"),
-                "contact_name",
-                min_length=2,
-                max_length=100
+                body.get("contact_name"), "contact_name", min_length=2, max_length=100
             )
 
         # Validate and add contact_phone if provided
@@ -105,18 +94,13 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Validate and add address if provided
         if "address" in body:
             updates["address"] = Validator.validate_string(
-                body.get("address"),
-                "address",
-                min_length=5,
-                max_length=500
+                body.get("address"), "address", min_length=5, max_length=500
             )
 
         # Validate and add household_size if provided
         if "household_size" in body:
             household_size = Validator.validate_number(
-                body.get("household_size"),
-                "household_size",
-                min_value=1
+                body.get("household_size"), "household_size", min_value=1
             )
             updates["household_size"] = int(household_size)
 
@@ -128,9 +112,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if "notes" in body:
             if body.get("notes"):
                 updates["notes"] = Validator.validate_string(
-                    body.get("notes"),
-                    "notes",
-                    max_length=1000
+                    body.get("notes"), "notes", max_length=1000
                 )
             else:
                 updates["notes"] = None
@@ -144,9 +126,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Update in DynamoDB
         updated_recipient = db.update_item(
-            pk=f"RECIPIENT#{recipient_id}",
-            sk="PROFILE",
-            updates=updates
+            pk=f"RECIPIENT#{recipient_id}", sk="PROFILE", updates=updates
         )
 
         logger.info(
@@ -156,7 +136,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         )
 
         # Return response (remove DynamoDB keys)
-        response_data = {k: v for k, v in updated_recipient.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]}
+        response_data = {
+            k: v for k, v in updated_recipient.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]
+        }
 
         return success_response(response_data)
 

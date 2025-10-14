@@ -106,9 +106,7 @@ class StorageStack(Stack):
                 principals=[iam.ServicePrincipal("cloudtrail.amazonaws.com")],
                 actions=["s3:PutObject"],
                 resources=[f"{self.cloudtrail_bucket.bucket_arn}/*"],
-                conditions={
-                    "StringEquals": {"s3:x-amz-acl": "bucket-owner-full-control"}
-                },
+                conditions={"StringEquals": {"s3:x-amz-acl": "bucket-owner-full-control"}},
             )
         )
 

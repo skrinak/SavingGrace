@@ -77,7 +77,7 @@ def aggregate_by_category(items: List[Dict[str, Any]]) -> Dict[str, int]:
     Returns:
         Dictionary of category -> quantity
     """
-    category_totals = defaultdict(int)
+    category_totals: Dict[str, int] = defaultdict(int)
 
     for item in items:
         category = item.get("category", "other")
@@ -129,11 +129,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         else:
             start_date = "2020-01-01T00:00:00"
 
-        logger.info(
-            "Fetching impact report",
-            start_date=start_date,
-            end_date=end_date
-        )
+        logger.info("Fetching impact report", start_date=start_date, end_date=end_date)
 
         # Initialize DynamoDB helper
         db = DynamoDBHelper()
@@ -141,14 +137,14 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Initialize metrics
         total_meals_provided = 0
         households_served = set()
-        items_distributed_by_category = defaultdict(int)
+        items_distributed_by_category: Dict[str, int] = defaultdict(int)
         total_weight_lbs = Decimal("0")
 
         # Query all donations in date range to calculate waste prevented
         donations_response = db.scan(
-            filter_expression=Attr("PK").begins_with("DONATION#") &
-                            Attr("SK").eq("METADATA") &
-                            Attr("created_at").between(start_date, end_date)
+            filter_expression=Attr("PK").begins_with("DONATION#")
+            & Attr("SK").eq("METADATA")
+            & Attr("created_at").between(start_date, end_date)
         )
 
         donations = donations_response["items"]
@@ -177,10 +173,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Query all completed distributions in date range
         distributions_response = db.scan(
-            filter_expression=Attr("PK").begins_with("DISTRIBUTION#") &
-                            Attr("SK").eq("METADATA") &
-                            Attr("status").eq("completed") &
-                            Attr("created_at").between(start_date, end_date)
+            filter_expression=Attr("PK").begins_with("DISTRIBUTION#")
+            & Attr("SK").eq("METADATA")
+            & Attr("status").eq("completed")
+            & Attr("created_at").between(start_date, end_date)
         )
 
         distributions = distributions_response["items"]
@@ -201,7 +197,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Aggregate by category
             for item in items:
                 category = item.get("category", "other")
-                quantity = item.get("quantity", 0)
+                quantity = int(item.get("quantity", 0))
                 items_distributed_by_category[category] += quantity
 
         # Calculate total meals provided

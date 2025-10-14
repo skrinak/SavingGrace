@@ -3,7 +3,7 @@ Input Validation Utilities
 Schema validation and sanitization
 """
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from datetime import datetime
 
 from .errors import ValidationError
@@ -15,15 +15,11 @@ class Validator:
     # Regex patterns
     EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     PHONE_PATTERN = re.compile(r"^\+?1?\d{10,15}$")
-    UUID_PATTERN = re.compile(
-        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-    )
+    UUID_PATTERN = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
     ALPHANUMERIC_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
     @staticmethod
-    def validate_required_fields(
-        data: Dict[str, Any], required_fields: List[str]
-    ) -> None:
+    def validate_required_fields(data: Dict[str, Any], required_fields: List[str]) -> None:
         """
         Validate that all required fields are present
 
@@ -56,9 +52,7 @@ class Validator:
             ValidationError: If email is invalid
         """
         if not email or not Validator.EMAIL_PATTERN.match(email):
-            raise ValidationError(
-                message="Invalid email format", details={"email": email}
-            )
+            raise ValidationError(message="Invalid email format", details={"email": email})
         return email.lower()
 
     @staticmethod
@@ -78,9 +72,7 @@ class Validator:
         # Remove common formatting characters
         cleaned = re.sub(r"[\s\-\(\)]", "", phone)
         if not Validator.PHONE_PATTERN.match(cleaned):
-            raise ValidationError(
-                message="Invalid phone format", details={"phone": phone}
-            )
+            raise ValidationError(message="Invalid phone format", details={"phone": phone})
         return cleaned
 
     @staticmethod
@@ -202,9 +194,7 @@ class Validator:
             )
 
     @staticmethod
-    def validate_enum(
-        value: Any, field_name: str, allowed_values: List[str]
-    ) -> str:
+    def validate_enum(value: Any, field_name: str, allowed_values: List[str]) -> str:
         """
         Validate enum value
 
@@ -228,7 +218,7 @@ class Validator:
                     "allowed_values": allowed_values,
                 },
             )
-        return value
+        return str(value)
 
     @staticmethod
     def validate_list(
@@ -273,7 +263,7 @@ class Validator:
         return value
 
 
-def validate_input(schema: Dict[str, Any]) -> callable:
+def validate_input(schema: Dict[str, Any]) -> Callable:
     """
     Decorator for input validation using schema
 
@@ -318,9 +308,7 @@ def validate_input(schema: Dict[str, Any]) -> callable:
                 raise ValidationError(message="Invalid JSON in request body")
 
             # Validate required fields
-            required_fields = [
-                field for field, rules in schema.items() if rules.get("required")
-            ]
+            required_fields = [field for field, rules in schema.items() if rules.get("required")]
             Validator.validate_required_fields(data, required_fields)
 
             # Validate each field

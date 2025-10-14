@@ -57,7 +57,7 @@ class StructuredLogger:
             extra: Additional fields
             error: Exception object
         """
-        log_data = {
+        log_data: Dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
             "level": level,
             "message": message,
@@ -91,9 +91,7 @@ class StructuredLogger:
         """Log error message"""
         self._log("ERROR", message, extra=kwargs, error=error)
 
-    def critical(
-        self, message: str, error: Optional[Exception] = None, **kwargs
-    ) -> None:
+    def critical(self, message: str, error: Optional[Exception] = None, **kwargs) -> None:
         """Log critical message"""
         self._log("CRITICAL", message, extra=kwargs, error=error)
 
@@ -126,9 +124,7 @@ class StructuredLogger:
             **kwargs,
         )
 
-    def log_api_response(
-        self, status_code: int, duration_ms: float, **kwargs
-    ) -> None:
+    def log_api_response(self, status_code: int, duration_ms: float, **kwargs) -> None:
         """
         Log API response
 
@@ -197,7 +193,7 @@ def get_logger(name: str = __name__, level: Optional[str] = None) -> StructuredL
         StructuredLogger instance
     """
     if name not in _loggers:
-        log_level = level or os.environ.get("LOG_LEVEL", "INFO")
+        log_level: str = level if level is not None else os.environ.get("LOG_LEVEL", "INFO")
         _loggers[name] = StructuredLogger(name, log_level)
     return _loggers[name]
 

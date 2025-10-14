@@ -23,14 +23,16 @@ logger = get_logger(__name__)
 
 
 @require_role("DonorCoordinator")
-@validate_input({
-    "name": {"type": "string", "required": True, "min_length": 2, "max_length": 100},
-    "email": {"type": "email", "required": True},
-    "phone": {"type": "string", "required": False, "min_length": 10, "max_length": 20},
-    "address": {"type": "string", "required": False, "max_length": 500},
-    "organization": {"type": "string", "required": False, "max_length": 200},
-    "notes": {"type": "string", "required": False, "max_length": 1000},
-})
+@validate_input(
+    {
+        "name": {"type": "string", "required": True, "min_length": 2, "max_length": 100},
+        "email": {"type": "email", "required": True},
+        "phone": {"type": "string", "required": False, "min_length": 10, "max_length": 20},
+        "address": {"type": "string", "required": False, "max_length": 500},
+        "organization": {"type": "string", "required": False, "max_length": 200},
+        "notes": {"type": "string", "required": False, "max_length": 1000},
+    }
+)
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Create a new donor
@@ -80,15 +82,13 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         db_duration = (datetime.utcnow() - db_start).total_seconds() * 1000
 
         logger.log_database_operation(
-            "put_item",
-            os.environ["TABLE_NAME"],
-            db_duration,
-            donor_id=donor_id
+            "put_item", os.environ["TABLE_NAME"], db_duration, donor_id=donor_id
         )
 
         # Remove internal fields from response
-        response_donor = {k: v for k, v in created_donor.items()
-                         if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]}
+        response_donor = {
+            k: v for k, v in created_donor.items() if k not in ["PK", "SK", "GSI1PK", "GSI1SK"]
+        }
 
         # Log response
         duration = (datetime.utcnow() - start_time).total_seconds() * 1000

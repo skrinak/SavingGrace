@@ -46,25 +46,21 @@ def validate_distribution_input(data: Dict[str, Any]) -> None:
     for idx, item in enumerate(items):
         if not isinstance(item, dict):
             raise ValidationError(
-                message=f"Item at index {idx} must be an object",
-                details={"index": idx}
+                message=f"Item at index {idx} must be an object", details={"index": idx}
             )
 
         # Validate required item fields
         if "donation_id" not in item:
             raise ValidationError(
-                message=f"Item at index {idx} missing donation_id",
-                details={"index": idx}
+                message=f"Item at index {idx} missing donation_id", details={"index": idx}
             )
         if "item_index" not in item:
             raise ValidationError(
-                message=f"Item at index {idx} missing item_index",
-                details={"index": idx}
+                message=f"Item at index {idx} missing item_index", details={"index": idx}
             )
         if "quantity" not in item:
             raise ValidationError(
-                message=f"Item at index {idx} missing quantity",
-                details={"index": idx}
+                message=f"Item at index {idx} missing quantity", details={"index": idx}
             )
 
         # Validate item fields
@@ -151,7 +147,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "Distribution created successfully",
             distribution_id=distribution_id,
             recipient_id=data["recipient_id"],
-            items_count=len(data["items"])
+            items_count=len(data["items"]),
         )
 
         # Return response
@@ -167,20 +163,14 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "created_at": now,
                 "updated_at": now,
             },
-            status_code=201
+            status_code=201,
         )
 
     except SavingGraceError as e:
         logger.error("Distribution creation failed", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
         logger.error("Unexpected error creating distribution", error=e)
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        return error_response(message="Internal server error", status_code=500)

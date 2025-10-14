@@ -31,13 +31,15 @@ def aggregate_by_donor(donations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     Returns:
         List of aggregated results by donor
     """
-    aggregated = defaultdict(lambda: {
-        "donor_id": None,
-        "donor_name": None,
-        "total_donations": 0,
-        "total_items": 0,
-        "total_weight_lbs": Decimal("0"),
-    })
+    aggregated: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {
+            "donor_id": None,
+            "donor_name": None,
+            "total_donations": 0,
+            "total_items": 0,
+            "total_weight_lbs": Decimal("0"),
+        }
+    )
 
     for donation in donations:
         donor_id = donation.get("donor_id")
@@ -64,12 +66,14 @@ def aggregate_by_category(donations: List[Dict[str, Any]]) -> List[Dict[str, Any
     Returns:
         List of aggregated results by category
     """
-    aggregated = defaultdict(lambda: {
-        "category": None,
-        "total_donations": 0,
-        "total_quantity": 0,
-        "total_weight_lbs": Decimal("0"),
-    })
+    aggregated: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {
+            "category": None,
+            "total_donations": 0,
+            "total_quantity": 0,
+            "total_weight_lbs": Decimal("0"),
+        }
+    )
 
     for donation in donations:
         # Get items from donation
@@ -95,12 +99,14 @@ def aggregate_by_date(donations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     Returns:
         List of aggregated results by date
     """
-    aggregated = defaultdict(lambda: {
-        "date": None,
-        "total_donations": 0,
-        "total_items": 0,
-        "total_weight_lbs": Decimal("0"),
-    })
+    aggregated: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {
+            "date": None,
+            "total_donations": 0,
+            "total_items": 0,
+            "total_weight_lbs": Decimal("0"),
+        }
+    )
 
     for donation in donations:
         # Extract date from created_at timestamp
@@ -162,17 +168,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Get group_by parameter
         group_by = query_params.get("group_by", "date")
-        group_by = Validator.validate_enum(
-            group_by,
-            "group_by",
-            ["donor", "category", "date"]
-        )
+        group_by = Validator.validate_enum(group_by, "group_by", ["donor", "category", "date"])
 
         logger.info(
-            "Fetching donations report",
-            start_date=start_date,
-            end_date=end_date,
-            group_by=group_by
+            "Fetching donations report", start_date=start_date, end_date=end_date, group_by=group_by
         )
 
         # Initialize DynamoDB helper
@@ -181,9 +180,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Query donations within date range
         # Using scan with filter for date range (in production, consider GSI)
         response = db.scan(
-            filter_expression=Attr("PK").begins_with("DONATION#") &
-                            Attr("SK").eq("METADATA") &
-                            Attr("created_at").between(start_date, end_date)
+            filter_expression=Attr("PK").begins_with("DONATION#")
+            & Attr("SK").eq("METADATA")
+            & Attr("created_at").between(start_date, end_date)
         )
 
         donations = response["items"]

@@ -59,9 +59,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if search:
             # Build filter expression for searching in name or contact_name
             filter_expr = (
-                Attr("name").contains(search) |
-                Attr("contact_name").contains(search) |
-                Attr("contact_phone").contains(search)
+                Attr("name").contains(search)
+                | Attr("contact_name").contains(search)
+                | Attr("contact_phone").contains(search)
             )
             # Also filter to only get recipient profiles
             filter_expr = filter_expr & Attr("SK").eq("PROFILE")
@@ -69,7 +69,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Scan with filter
             result = db.scan(
                 filter_expression=filter_expr,
-                limit=page_size * page  # Get enough items for pagination
+                limit=page_size * page,  # Get enough items for pagination
             )
 
             all_items = result["items"]
@@ -87,7 +87,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             result = db.query(
                 key_condition=Key("GSI1PK").eq("RECIPIENTS"),
                 index_name="GSI1",
-                limit=page_size * page  # Get enough items for pagination
+                limit=page_size * page,  # Get enough items for pagination
             )
 
             all_items = result["items"]

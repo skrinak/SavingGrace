@@ -3,7 +3,7 @@ DynamoDB Helper Utilities
 Common operations for DynamoDB table access
 """
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from datetime import datetime
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -77,7 +77,7 @@ class DynamoDBHelper:
             if "Item" not in response:
                 raise NotFoundError(resource="Item", resource_id=f"{pk}#{sk}")
 
-            return response["Item"]
+            return cast(Dict[str, Any], response["Item"])
         except NotFoundError:
             raise
         except ClientError as e:
@@ -130,7 +130,7 @@ class DynamoDBHelper:
                 params["ConditionExpression"] = condition_expression
 
             response = self.table.update_item(**params)
-            return response["Attributes"]
+            return cast(Dict[str, Any], response["Attributes"])
         except ClientError as e:
             if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 raise NotFoundError(resource="Item", resource_id=f"{pk}#{sk}")
@@ -269,10 +269,8 @@ class DynamoDBHelper:
             DatabaseError: If batch get operation fails
         """
         try:
-            response = self.dynamodb.batch_get_item(
-                RequestItems={self.table_name: {"Keys": keys}}
-            )
-            return response.get("Responses", {}).get(self.table_name, [])
+            response = self.dynamodb.batch_get_item(RequestItems={self.table_name: {"Keys": keys}})
+            return cast(List[Dict[str, Any]], response.get("Responses", {}).get(self.table_name, []))
         except ClientError as e:
             raise DatabaseError(
                 message=f"Failed to batch get items: {str(e)}",

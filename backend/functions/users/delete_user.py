@@ -17,7 +17,7 @@ from lib.responses import success_response, error_response
 # Initialize
 logger = get_logger(__name__)
 db = DynamoDBHelper()
-cognito_client = boto3.client('cognito-idp', region_name='us-west-2')
+cognito_client = boto3.client("cognito-idp", region_name="us-west-2")
 
 
 @require_role("Admin")
@@ -38,7 +38,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Delete user request",
             user_id=current_user.get("sub"),
-            user_email=current_user.get("email")
+            user_email=current_user.get("email"),
         )
 
         # Get userId from path parameters
@@ -50,23 +50,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Check if trying to delete yourself
         if user_id == current_user.get("sub"):
-            logger.warning(
-                "User attempted to delete themselves",
-                user_id=user_id
-            )
-            raise AuthorizationError(
-                message="Cannot delete your own user account"
-            )
+            logger.warning("User attempted to delete themselves", user_id=user_id)
+            raise AuthorizationError(message="Cannot delete your own user account")
 
         # Get environment variables
-        user_pool_id = os.environ['USER_POOL_ID']
+        user_pool_id = os.environ["USER_POOL_ID"]
 
         # Check if user exists in DynamoDB
         try:
-            user_profile = db.get_item(
-                pk=f"USER#{user_id}",
-                sk="PROFILE"
-            )
+            user_profile = db.get_item(pk=f"USER#{user_id}", sk="PROFILE")
         except NotFoundError:
             logger.warning("User not found in DynamoDB", user_id=user_id)
             raise NotFoundError(resource="User", resource_id=user_id)
@@ -75,57 +67,38 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Delete user from Cognito
         try:
-            cognito_client.admin_delete_user(
-                UserPoolId=user_pool_id,
-                Username=email
-            )
+            cognito_client.admin_delete_user(UserPoolId=user_pool_id, Username=email)
 
-            logger.info(
-                "User deleted from Cognito",
-                user_id=user_id,
-                email=email
-            )
+            logger.info("User deleted from Cognito", user_id=user_id, email=email)
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'UserNotFoundException':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "UserNotFoundException":
                 logger.warning(
-                    "User not found in Cognito (continuing with DynamoDB deletion)",
-                    user_id=user_id
+                    "User not found in Cognito (continuing with DynamoDB deletion)", user_id=user_id
                 )
                 # Continue to delete from DynamoDB even if not in Cognito
             else:
                 logger.error("Cognito delete user failed", error=e)
                 raise SavingGraceError(
-                    message=f"Failed to delete user from Cognito: {str(e)}",
-                    status_code=500
+                    message=f"Failed to delete user from Cognito: {str(e)}", status_code=500
                 )
 
         # Delete user profile from DynamoDB
         try:
-            db.delete_item(
-                pk=f"USER#{user_id}",
-                sk="PROFILE"
-            )
+            db.delete_item(pk=f"USER#{user_id}", sk="PROFILE")
 
-            logger.info(
-                "User profile deleted from DynamoDB",
-                user_id=user_id
-            )
+            logger.info("User profile deleted from DynamoDB", user_id=user_id)
 
         except Exception as e:
             logger.error("Failed to delete user profile from DynamoDB", error=e)
             raise SavingGraceError(
-                message=f"Failed to delete user profile: {str(e)}",
-                status_code=500
+                message=f"Failed to delete user profile: {str(e)}", status_code=500
             )
 
         logger.info("User deleted successfully", user_id=user_id)
 
-        return success_response({
-            "message": "User deleted successfully",
-            "user_id": user_id
-        })
+        return success_response({"message": "User deleted successfully", "user_id": user_id})
 
     except (AuthorizationError, NotFoundError, SavingGraceError) as e:
         logger.warning(f"User deletion failed: {e.message}", error=e)

@@ -34,21 +34,16 @@ def validate_donation_items(items: list) -> None:
     """
     if not isinstance(items, list):
         raise ValidationError(
-            message="items must be a list",
-            details={"type": type(items).__name__}
+            message="items must be a list", details={"type": type(items).__name__}
         )
 
     if len(items) == 0:
-        raise ValidationError(
-            message="items list cannot be empty",
-            details={"min_items": 1}
-        )
+        raise ValidationError(message="items list cannot be empty", details={"min_items": 1})
 
     for idx, item in enumerate(items):
         if not isinstance(item, dict):
             raise ValidationError(
-                message=f"Item at index {idx} must be a dictionary",
-                details={"index": idx}
+                message=f"Item at index {idx} must be a dictionary", details={"index": idx}
             )
 
         # Validate required fields
@@ -57,12 +52,14 @@ def validate_donation_items(items: list) -> None:
             if field not in item:
                 raise ValidationError(
                     message=f"Item at index {idx} missing required field: {field}",
-                    details={"index": idx, "missing_field": field}
+                    details={"index": idx, "missing_field": field},
                 )
 
         # Validate field types and values
         Validator.validate_string(item["name"], f"items[{idx}].name", min_length=1, max_length=200)
-        Validator.validate_string(item["category"], f"items[{idx}].category", min_length=1, max_length=100)
+        Validator.validate_string(
+            item["category"], f"items[{idx}].category", min_length=1, max_length=100
+        )
         Validator.validate_number(item["quantity"], f"items[{idx}].quantity", min_value=0)
         Validator.validate_string(item["unit"], f"items[{idx}].unit", min_length=1, max_length=50)
 
@@ -109,7 +106,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         receipt_url = None
         if "receipt_url" in data:
-            receipt_url = Validator.validate_string(data["receipt_url"], "receipt_url", max_length=500)
+            receipt_url = Validator.validate_string(
+                data["receipt_url"], "receipt_url", max_length=500
+            )
 
         # Generate donation ID
         donation_id = str(uuid.uuid4())
@@ -163,13 +162,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 item_record["GSI3SK"] = item["expiration_date"]
 
             db.put_item(item_record)
-            donation_items.append({
-                "name": item["name"],
-                "category": item["category"],
-                "quantity": item["quantity"],
-                "unit": item["unit"],
-                "expiration_date": item.get("expiration_date"),
-            })
+            donation_items.append(
+                {
+                    "name": item["name"],
+                    "category": item["category"],
+                    "quantity": item["quantity"],
+                    "unit": item["unit"],
+                    "expiration_date": item.get("expiration_date"),
+                }
+            )
 
         logger.info("Created donation items", donation_id=donation_id, item_count=len(items))
 

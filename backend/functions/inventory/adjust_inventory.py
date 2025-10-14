@@ -30,17 +30,11 @@ VALID_CATEGORIES = [
     "canned",
     "frozen",
     "beverages",
-    "other"
+    "other",
 ]
 
 # Valid adjustment reasons
-VALID_REASONS = [
-    "donation",
-    "distribution",
-    "expired",
-    "damaged",
-    "other"
-]
+VALID_REASONS = ["donation", "distribution", "expired", "damaged", "other"]
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -64,14 +58,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not has_donor_coord:
             raise AuthorizationError(
                 message="DonorCoordinator or DistributionManager role required",
-                required_role="DonorCoordinator"
+                required_role="DonorCoordinator",
             )
 
-        logger.info(
-            "Adjust inventory request",
-            user_id=user.get("sub"),
-            user_role=user_role
-        )
+        logger.info("Adjust inventory request", user_id=user.get("sub"), user_role=user_role)
 
         # Parse request body
         try:
@@ -85,53 +75,28 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         Validator.validate_required_fields(data, required_fields)
 
         # Validate and extract fields
-        category = Validator.validate_enum(
-            data["category"],
-            "category",
-            VALID_CATEGORIES
-        )
+        category = Validator.validate_enum(data["category"], "category", VALID_CATEGORIES)
 
         item_name = Validator.validate_string(
-            data["item_name"],
-            "item_name",
-            min_length=1,
-            max_length=200
+            data["item_name"], "item_name", min_length=1, max_length=200
         )
 
-        quantity_change = Validator.validate_number(
-            data["quantity_change"],
-            "quantity_change"
-        )
+        quantity_change = Validator.validate_number(data["quantity_change"], "quantity_change")
 
-        reason = Validator.validate_enum(
-            data["reason"],
-            "reason",
-            VALID_REASONS
-        )
+        reason = Validator.validate_enum(data["reason"], "reason", VALID_REASONS)
 
         # Optional fields
         notes = data.get("notes", "")
         if notes:
-            notes = Validator.validate_string(
-                notes,
-                "notes",
-                max_length=500
-            )
+            notes = Validator.validate_string(notes, "notes", max_length=500)
 
         unit = data.get("unit", "units")
         if unit:
-            unit = Validator.validate_string(
-                unit,
-                "unit",
-                max_length=50
-            )
+            unit = Validator.validate_string(unit, "unit", max_length=50)
 
         expiration_date = data.get("expiration_date")
         if expiration_date:
-            expiration_date = Validator.validate_date(
-                expiration_date,
-                "expiration_date"
-            )
+            expiration_date = Validator.validate_date(expiration_date, "expiration_date")
 
         # Initialize DynamoDB helper
         db = DynamoDBHelper()
@@ -142,7 +107,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         query_result = db.query(
             key_condition=Key("PK").eq(f"INVENTORY#{category}"),
-            filter_expression=Attr("name").eq(item_name)
+            filter_expression=Attr("name").eq(item_name),
         )
 
         existing_items = query_result.get("items", [])
@@ -168,7 +133,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     "quantity": new_quantity,
                     "unit": unit,
                     "last_adjusted": now,
-                }
+                },
             )
 
             # Update expiration date if provided
@@ -180,7 +145,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         "expiration_date": expiration_date,
                         "GSI1PK": "INVENTORY",
                         "GSI1SK": expiration_date,
-                    }
+                    },
                 )
 
             logger.info(
@@ -191,7 +156,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 old_quantity=current_quantity,
                 new_quantity=new_quantity,
                 quantity_change=quantity_change,
-                reason=reason
+                reason=reason,
             )
 
         else:
@@ -230,7 +195,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 category=category,
                 item_name=item_name,
                 quantity=new_quantity,
-                reason=reason
+                reason=reason,
             )
 
         # Log the adjustment for audit trail
@@ -252,39 +217,28 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Logged inventory adjustment",
             item_id=updated_item["item_id"],
-            adjusted_by=user.get("email")
+            adjusted_by=user.get("email"),
         )
 
         # Return updated item
-        return success_response({
-            "item": updated_item,
-            "adjustment": {
-                "quantity_change": quantity_change,
-                "reason": reason,
-                "notes": notes,
-                "adjusted_by": user.get("email"),
-                "timestamp": now
+        return success_response(
+            {
+                "item": updated_item,
+                "adjustment": {
+                    "quantity_change": quantity_change,
+                    "reason": reason,
+                    "notes": notes,
+                    "adjusted_by": user.get("email"),
+                    "timestamp": now,
+                },
             }
-        })
+        )
 
     except SavingGraceError as e:
-        logger.error(
-            "SavingGrace error in adjust inventory",
-            error=e,
-            error_code=e.error_code
-        )
+        logger.error("SavingGrace error in adjust inventory", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
-        logger.error(
-            "Unexpected error in adjust inventory",
-            error=e
-        )
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        logger.error("Unexpected error in adjust inventory", error=e)
+        return error_response(message="Internal server error", status_code=500)

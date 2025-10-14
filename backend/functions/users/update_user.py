@@ -19,7 +19,7 @@ from lib.validation import Validator
 # Initialize
 logger = get_logger(__name__)
 db = DynamoDBHelper()
-cognito_client = boto3.client('cognito-idp', region_name='us-west-2')
+cognito_client = boto3.client("cognito-idp", region_name="us-west-2")
 
 
 @require_role("Admin")
@@ -40,7 +40,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Update user request",
             user_id=current_user.get("sub"),
-            user_email=current_user.get("email")
+            user_email=current_user.get("email"),
         )
 
         # Get userId from path parameters
@@ -58,18 +58,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not any(field in body for field in allowed_fields):
             raise ValidationError(
                 message="At least one field must be provided for update",
-                details={"allowed_fields": allowed_fields}
+                details={"allowed_fields": allowed_fields},
             )
 
         # Get environment variables
-        user_pool_id = os.environ['USER_POOL_ID']
+        user_pool_id = os.environ["USER_POOL_ID"]
 
         # Check if user exists in DynamoDB
         try:
-            user_profile = db.get_item(
-                pk=f"USER#{user_id}",
-                sk="PROFILE"
-            )
+            user_profile = db.get_item(pk=f"USER#{user_id}", sk="PROFILE")
         except NotFoundError:
             logger.warning("User not found", user_id=user_id)
             raise NotFoundError(resource="User", resource_id=user_id)
@@ -78,35 +75,29 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Prepare Cognito updates
         cognito_attributes = []
-        dynamodb_updates = {}
+        dynamodb_updates: Dict[str, Any] = {}
 
         # Validate and prepare given_name
         if "given_name" in body:
             given_name = Validator.validate_string(
-                body["given_name"],
-                "given_name",
-                min_length=1,
-                max_length=100
+                body["given_name"], "given_name", min_length=1, max_length=100
             )
-            cognito_attributes.append({'Name': 'given_name', 'Value': given_name})
+            cognito_attributes.append({"Name": "given_name", "Value": given_name})
             dynamodb_updates["given_name"] = given_name
 
         # Validate and prepare family_name
         if "family_name" in body:
             family_name = Validator.validate_string(
-                body["family_name"],
-                "family_name",
-                min_length=1,
-                max_length=100
+                body["family_name"], "family_name", min_length=1, max_length=100
             )
-            cognito_attributes.append({'Name': 'family_name', 'Value': family_name})
+            cognito_attributes.append({"Name": "family_name", "Value": family_name})
             dynamodb_updates["family_name"] = family_name
 
         # Validate and prepare phone
         if "phone" in body:
             if body["phone"]:
                 phone = Validator.validate_phone(body["phone"])
-                cognito_attributes.append({'Name': 'phone_number', 'Value': phone})
+                cognito_attributes.append({"Name": "phone_number", "Value": phone})
                 dynamodb_updates["phone"] = phone
             else:
                 # Remove phone number
@@ -116,8 +107,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if "enabled" in body:
             if not isinstance(body["enabled"], bool):
                 raise ValidationError(
-                    message="enabled must be a boolean",
-                    details={"field": "enabled"}
+                    message="enabled must be a boolean", details={"field": "enabled"}
                 )
             enabled = body["enabled"]
             dynamodb_updates["enabled"] = enabled
@@ -127,56 +117,42 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Update attributes
             if cognito_attributes:
                 cognito_client.admin_update_user_attributes(
-                    UserPoolId=user_pool_id,
-                    Username=email,
-                    UserAttributes=cognito_attributes
+                    UserPoolId=user_pool_id, Username=email, UserAttributes=cognito_attributes
                 )
 
                 logger.info(
                     "User attributes updated in Cognito",
                     user_id=user_id,
-                    attributes_count=len(cognito_attributes)
+                    attributes_count=len(cognito_attributes),
                 )
 
             # Enable or disable user
             if "enabled" in body:
                 if enabled:
-                    cognito_client.admin_enable_user(
-                        UserPoolId=user_pool_id,
-                        Username=email
-                    )
+                    cognito_client.admin_enable_user(UserPoolId=user_pool_id, Username=email)
                     logger.info("User enabled in Cognito", user_id=user_id)
                 else:
-                    cognito_client.admin_disable_user(
-                        UserPoolId=user_pool_id,
-                        Username=email
-                    )
+                    cognito_client.admin_disable_user(UserPoolId=user_pool_id, Username=email)
                     logger.info("User disabled in Cognito", user_id=user_id)
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'UserNotFoundException':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "UserNotFoundException":
                 logger.warning("User not found in Cognito", user_id=user_id)
                 raise NotFoundError(resource="User", resource_id=user_id)
             else:
                 logger.error("Cognito update user failed", error=e)
                 raise SavingGraceError(
-                    message=f"Failed to update user in Cognito: {str(e)}",
-                    status_code=500
+                    message=f"Failed to update user in Cognito: {str(e)}", status_code=500
                 )
 
         # Update user profile in DynamoDB
         try:
             updated_profile = db.update_item(
-                pk=f"USER#{user_id}",
-                sk="PROFILE",
-                updates=dynamodb_updates
+                pk=f"USER#{user_id}", sk="PROFILE", updates=dynamodb_updates
             )
 
-            logger.info(
-                "User profile updated in DynamoDB",
-                user_id=user_id
-            )
+            logger.info("User profile updated in DynamoDB", user_id=user_id)
 
         except NotFoundError:
             logger.warning("User profile not found in DynamoDB", user_id=user_id)

@@ -28,7 +28,7 @@ VALID_CATEGORIES = [
     "canned",
     "frozen",
     "beverages",
-    "other"
+    "other",
 ]
 
 
@@ -48,9 +48,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Log request
         user = get_user_from_event(event)
         logger.info(
-            "Get inventory by category request",
-            user_id=user.get("sub"),
-            user_role=user.get("role")
+            "Get inventory by category request", user_id=user.get("sub"), user_role=user.get("role")
         )
 
         # Extract category from path parameters
@@ -58,17 +56,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         category = path_params.get("category")
 
         if not category:
-            raise ValidationError(
-                message="Category is required",
-                details={"field": "category"}
-            )
+            raise ValidationError(message="Category is required", details={"field": "category"})
 
         # Validate category
-        category = Validator.validate_enum(
-            category,
-            "category",
-            VALID_CATEGORIES
-        )
+        category = Validator.validate_enum(category, "category", VALID_CATEGORIES)
 
         # Initialize DynamoDB helper
         db = DynamoDBHelper()
@@ -77,43 +68,22 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # PK = INVENTORY#{category}
         from boto3.dynamodb.conditions import Key
 
-        result = db.query(
-            key_condition=Key("PK").eq(f"INVENTORY#{category}")
-        )
+        result = db.query(key_condition=Key("PK").eq(f"INVENTORY#{category}"))
 
         items = result.get("items", [])
 
-        logger.info(
-            "Retrieved inventory items",
-            category=category,
-            item_count=len(items)
-        )
+        logger.info("Retrieved inventory items", category=category, item_count=len(items))
 
         # Return items for this category
-        return success_response({
-            "category": category,
-            "items": items,
-            "count": len(items)
-        })
+        return success_response({"category": category, "items": items, "count": len(items)})
 
     except SavingGraceError as e:
         logger.error(
-            "SavingGrace error in get inventory by category",
-            error=e,
-            error_code=e.error_code
+            "SavingGrace error in get inventory by category", error=e, error_code=e.error_code
         )
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
-        logger.error(
-            "Unexpected error in get inventory by category",
-            error=e
-        )
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        logger.error("Unexpected error in get inventory by category", error=e)
+        return error_response(message="Internal server error", status_code=500)

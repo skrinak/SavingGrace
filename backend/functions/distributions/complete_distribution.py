@@ -37,31 +37,33 @@ def validate_completion_input(data: Dict[str, Any]) -> None:
         for idx, item in enumerate(items):
             if not isinstance(item, dict):
                 raise ValidationError(
-                    message=f"Item at index {idx} must be an object",
-                    details={"index": idx}
+                    message=f"Item at index {idx} must be an object", details={"index": idx}
                 )
 
             # Validate required item fields
             if "donation_id" not in item:
                 raise ValidationError(
-                    message=f"Item at index {idx} missing donation_id",
-                    details={"index": idx}
+                    message=f"Item at index {idx} missing donation_id", details={"index": idx}
                 )
             if "item_index" not in item:
                 raise ValidationError(
-                    message=f"Item at index {idx} missing item_index",
-                    details={"index": idx}
+                    message=f"Item at index {idx} missing item_index", details={"index": idx}
                 )
             if "quantity" not in item:
                 raise ValidationError(
-                    message=f"Item at index {idx} missing quantity",
-                    details={"index": idx}
+                    message=f"Item at index {idx} missing quantity", details={"index": idx}
                 )
 
             # Validate item fields
-            Validator.validate_string(item["donation_id"], f"actual_items[{idx}].donation_id", min_length=1)
-            Validator.validate_number(item["item_index"], f"actual_items[{idx}].item_index", min_value=0)
-            Validator.validate_number(item["quantity"], f"actual_items[{idx}].quantity", min_value=0)
+            Validator.validate_string(
+                item["donation_id"], f"actual_items[{idx}].donation_id", min_length=1
+            )
+            Validator.validate_number(
+                item["item_index"], f"actual_items[{idx}].item_index", min_value=0
+            )
+            Validator.validate_number(
+                item["quantity"], f"actual_items[{idx}].quantity", min_value=0
+            )
 
     # Validate completion_notes (optional)
     if "completion_notes" in data and data["completion_notes"]:
@@ -93,7 +95,7 @@ def update_inventory(items_to_distribute: List[Dict[str, Any]]) -> List[Dict[str
                 "Updating inventory",
                 donation_id=donation_id,
                 item_index=item_index,
-                quantity_distributed=quantity
+                quantity_distributed=quantity,
             )
 
             # Get the donation to access inventory
@@ -106,7 +108,7 @@ def update_inventory(items_to_distribute: List[Dict[str, Any]]) -> List[Dict[str
                 logger.warning(
                     "Could not find donation for inventory update",
                     donation_id=donation_id,
-                    error=str(e)
+                    error=str(e),
                 )
                 continue
 
@@ -118,7 +120,7 @@ def update_inventory(items_to_distribute: List[Dict[str, Any]]) -> List[Dict[str
                     "Invalid item_index for donation",
                     donation_id=donation_id,
                     item_index=item_index,
-                    items_count=len(donation_items)
+                    items_count=len(donation_items),
                 )
                 continue
 
@@ -149,15 +151,12 @@ def update_inventory(items_to_distribute: List[Dict[str, Any]]) -> List[Dict[str
                 item_index=item_index,
                 item_name=donation_items[item_index].get("item_name"),
                 previous_quantity=current_quantity,
-                new_quantity=new_quantity
+                new_quantity=new_quantity,
             )
 
     except Exception as e:
         logger.error("Failed to update inventory", error=e)
-        raise DatabaseError(
-            message="Failed to update inventory",
-            details={"error": str(e)}
-        )
+        raise DatabaseError(message="Failed to update inventory", details={"error": str(e)})
 
     return adjustments
 
@@ -188,8 +187,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         if not distribution_id:
             raise ValidationError(
-                message="Missing distributionId in path",
-                details={"parameter": "distributionId"}
+                message="Missing distributionId in path", details={"parameter": "distributionId"}
             )
 
         # Validate distribution_id format
@@ -213,7 +211,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if distribution.get("status") == "completed":
             raise ValidationError(
                 message="Distribution is already completed",
-                details={"distribution_id": distribution_id}
+                details={"distribution_id": distribution_id},
             )
 
         # Determine which items to use for inventory update
@@ -250,7 +248,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Distribution completed successfully",
             distribution_id=distribution_id,
-            inventory_adjustments_count=len(inventory_adjustments)
+            inventory_adjustments_count=len(inventory_adjustments),
         )
 
         # Prepare response
@@ -275,14 +273,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     except SavingGraceError as e:
         logger.error("Failed to complete distribution", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
         logger.error("Unexpected error completing distribution", error=e)
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        return error_response(message="Internal server error", status_code=500)

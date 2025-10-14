@@ -31,14 +31,16 @@ def aggregate_by_recipient(distributions: List[Dict[str, Any]]) -> List[Dict[str
     Returns:
         List of aggregated results by recipient
     """
-    aggregated = defaultdict(lambda: {
-        "recipient_id": None,
-        "recipient_name": None,
-        "total_distributions": 0,
-        "total_items": 0,
-        "completed_distributions": 0,
-        "pending_distributions": 0,
-    })
+    aggregated: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {
+            "recipient_id": None,
+            "recipient_name": None,
+            "total_distributions": 0,
+            "total_items": 0,
+            "completed_distributions": 0,
+            "pending_distributions": 0,
+        }
+    )
 
     for distribution in distributions:
         recipient_id = distribution.get("recipient_id")
@@ -70,13 +72,15 @@ def aggregate_by_date(distributions: List[Dict[str, Any]]) -> List[Dict[str, Any
     Returns:
         List of aggregated results by date
     """
-    aggregated = defaultdict(lambda: {
-        "date": None,
-        "total_distributions": 0,
-        "total_items": 0,
-        "completed_distributions": 0,
-        "pending_distributions": 0,
-    })
+    aggregated: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {
+            "date": None,
+            "total_distributions": 0,
+            "total_items": 0,
+            "completed_distributions": 0,
+            "pending_distributions": 0,
+        }
+    )
 
     for distribution in distributions:
         # Extract date from scheduled_date or created_at timestamp
@@ -114,12 +118,14 @@ def aggregate_by_status(distributions: List[Dict[str, Any]]) -> List[Dict[str, A
     Returns:
         List of aggregated results by status
     """
-    aggregated = defaultdict(lambda: {
-        "status": None,
-        "total_distributions": 0,
-        "total_items": 0,
-        "total_recipients": set(),
-    })
+    aggregated: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {
+            "status": None,
+            "total_distributions": 0,
+            "total_items": 0,
+            "total_recipients": set(),
+        }
+    )
 
     for distribution in distributions:
         status = distribution.get("status", "unknown")
@@ -182,17 +188,13 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Get group_by parameter
         group_by = query_params.get("group_by", "date")
-        group_by = Validator.validate_enum(
-            group_by,
-            "group_by",
-            ["recipient", "date", "status"]
-        )
+        group_by = Validator.validate_enum(group_by, "group_by", ["recipient", "date", "status"])
 
         logger.info(
             "Fetching distributions report",
             start_date=start_date,
             end_date=end_date,
-            group_by=group_by
+            group_by=group_by,
         )
 
         # Initialize DynamoDB helper
@@ -201,9 +203,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Query distributions within date range
         # Using scan with filter for date range (in production, consider GSI)
         response = db.scan(
-            filter_expression=Attr("PK").begins_with("DISTRIBUTION#") &
-                            Attr("SK").eq("METADATA") &
-                            Attr("created_at").between(start_date, end_date)
+            filter_expression=Attr("PK").begins_with("DISTRIBUTION#")
+            & Attr("SK").eq("METADATA")
+            & Attr("created_at").between(start_date, end_date)
         )
 
         distributions = response["items"]

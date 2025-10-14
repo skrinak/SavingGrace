@@ -48,9 +48,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Query for all items with this donation ID
         pk = f"DONATION#{donation_id}"
-        result = db.query(
-            key_condition=Key("PK").eq(pk)
-        )
+        result = db.query(key_condition=Key("PK").eq(pk))
 
         if not result["items"]:
             raise NotFoundError(resource="Donation", resource_id=donation_id)

@@ -19,7 +19,7 @@ from lib.validation import Validator
 # Initialize
 logger = get_logger(__name__)
 db = DynamoDBHelper()
-cognito_client = boto3.client('cognito-idp', region_name='us-west-2')
+cognito_client = boto3.client("cognito-idp", region_name="us-west-2")
 
 # Valid roles
 VALID_ROLES = ["Admin", "DonorCoordinator", "DistributionManager", "Volunteer", "ReadOnly"]
@@ -43,7 +43,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(
             "Update user role request",
             user_id=current_user.get("sub"),
-            user_email=current_user.get("email")
+            user_email=current_user.get("email"),
         )
 
         # Get userId from path parameters
@@ -55,13 +55,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Check if trying to change your own role
         if user_id == current_user.get("sub"):
-            logger.warning(
-                "User attempted to change their own role",
-                user_id=user_id
-            )
-            raise AuthorizationError(
-                message="Cannot change your own role"
-            )
+            logger.warning("User attempted to change their own role", user_id=user_id)
+            raise AuthorizationError(message="Cannot change your own role")
 
         # Parse and validate input
         body = json.loads(event.get("body", "{}"))
@@ -73,14 +68,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         new_role = Validator.validate_enum(body["role"], "role", VALID_ROLES)
 
         # Get environment variables
-        user_pool_id = os.environ['USER_POOL_ID']
+        user_pool_id = os.environ["USER_POOL_ID"]
 
         # Check if user exists in DynamoDB
         try:
-            user_profile = db.get_item(
-                pk=f"USER#{user_id}",
-                sk="PROFILE"
-            )
+            user_profile = db.get_item(pk=f"USER#{user_id}", sk="PROFILE")
         except NotFoundError:
             logger.warning("User not found in DynamoDB", user_id=user_id)
             raise NotFoundError(resource="User", resource_id=user_id)
@@ -90,11 +82,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Check if role is actually changing
         if old_role == new_role:
-            logger.info(
-                "Role unchanged, returning current user",
-                user_id=user_id,
-                role=old_role
-            )
+            logger.info("Role unchanged, returning current user", user_id=user_id, role=old_role)
             # Return current user data
             user_data = {
                 "user_id": user_profile.get("user_id"),
@@ -116,14 +104,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if old_role:
                 try:
                     cognito_client.admin_remove_user_from_group(
-                        UserPoolId=user_pool_id,
-                        Username=email,
-                        GroupName=old_role
+                        UserPoolId=user_pool_id, Username=email, GroupName=old_role
                     )
                     logger.info(
-                        "User removed from old Cognito group",
-                        user_id=user_id,
-                        old_group=old_role
+                        "User removed from old Cognito group", user_id=user_id, old_group=old_role
                     )
                 except ClientError as e:
                     # Continue even if removal fails (user might not be in group)
@@ -131,60 +115,47 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         "Failed to remove user from old group",
                         user_id=user_id,
                         old_group=old_role,
-                        error=str(e)
+                        error=str(e),
                     )
 
             # Add to new group
             cognito_client.admin_add_user_to_group(
-                UserPoolId=user_pool_id,
-                Username=email,
-                GroupName=new_role
+                UserPoolId=user_pool_id, Username=email, GroupName=new_role
             )
-            logger.info(
-                "User added to new Cognito group",
-                user_id=user_id,
-                new_group=new_role
-            )
+            logger.info("User added to new Cognito group", user_id=user_id, new_group=new_role)
 
             # Update custom:role attribute
             cognito_client.admin_update_user_attributes(
                 UserPoolId=user_pool_id,
                 Username=email,
-                UserAttributes=[
-                    {'Name': 'custom:role', 'Value': new_role}
-                ]
+                UserAttributes=[{"Name": "custom:role", "Value": new_role}],
             )
             logger.info(
-                "User role attribute updated in Cognito",
-                user_id=user_id,
-                new_role=new_role
+                "User role attribute updated in Cognito", user_id=user_id, new_role=new_role
             )
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'UserNotFoundException':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "UserNotFoundException":
                 logger.warning("User not found in Cognito", user_id=user_id)
                 raise NotFoundError(resource="User", resource_id=user_id)
             else:
                 logger.error("Cognito update user role failed", error=e)
                 raise SavingGraceError(
-                    message=f"Failed to update user role in Cognito: {str(e)}",
-                    status_code=500
+                    message=f"Failed to update user role in Cognito: {str(e)}", status_code=500
                 )
 
         # Update role in DynamoDB
         try:
             updated_profile = db.update_item(
-                pk=f"USER#{user_id}",
-                sk="PROFILE",
-                updates={"role": new_role}
+                pk=f"USER#{user_id}", sk="PROFILE", updates={"role": new_role}
             )
 
             logger.info(
                 "User role updated in DynamoDB",
                 user_id=user_id,
                 old_role=old_role,
-                new_role=new_role
+                new_role=new_role,
             )
 
         except NotFoundError:
@@ -210,10 +181,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             user_data["last_login"] = updated_profile["last_login"]
 
         logger.info(
-            "User role updated successfully",
-            user_id=user_id,
-            old_role=old_role,
-            new_role=new_role
+            "User role updated successfully", user_id=user_id, old_role=old_role, new_role=new_role
         )
 
         return success_response(user_data)

@@ -48,15 +48,9 @@ def parse_query_params(event: Dict[str, Any]) -> Dict[str, Any]:
         try:
             params["page"] = int(query_params["page"])
             if params["page"] < 1:
-                raise ValidationError(
-                    message="page must be >= 1",
-                    details={"parameter": "page"}
-                )
+                raise ValidationError(message="page must be >= 1", details={"parameter": "page"})
         except ValueError:
-            raise ValidationError(
-                message="page must be a number",
-                details={"parameter": "page"}
-            )
+            raise ValidationError(message="page must be a number", details={"parameter": "page"})
 
     # Parse page_size
     if "page_size" in query_params:
@@ -65,12 +59,11 @@ def parse_query_params(event: Dict[str, Any]) -> Dict[str, Any]:
             if params["page_size"] < 1 or params["page_size"] > 100:
                 raise ValidationError(
                     message="page_size must be between 1 and 100",
-                    details={"parameter": "page_size"}
+                    details={"parameter": "page_size"},
                 )
         except ValueError:
             raise ValidationError(
-                message="page_size must be a number",
-                details={"parameter": "page_size"}
+                message="page_size must be a number", details={"parameter": "page_size"}
             )
 
     # Parse recipient_id (optional filter)
@@ -142,7 +135,7 @@ def query_distributions(params: Dict[str, Any]) -> Dict[str, Any]:
         key_condition=key_condition,
         filter_expression=filter_expression,
         index_name=index_name,
-        scan_forward=False  # Most recent first
+        scan_forward=False,  # Most recent first
     )
 
     return result
@@ -178,7 +171,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             start_date=params["start_date"],
             end_date=params["end_date"],
             page=params["page"],
-            page_size=params["page_size"]
+            page_size=params["page_size"],
         )
 
         # Query distributions
@@ -194,39 +187,35 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Format items for response
         formatted_items = []
         for item in paginated_items:
-            formatted_items.append({
-                "distribution_id": item.get("distribution_id"),
-                "recipient_id": item.get("recipient_id"),
-                "distribution_date": item.get("distribution_date"),
-                "status": item.get("status"),
-                "created_at": item.get("created_at"),
-                "updated_at": item.get("updated_at"),
-            })
+            formatted_items.append(
+                {
+                    "distribution_id": item.get("distribution_id"),
+                    "recipient_id": item.get("recipient_id"),
+                    "distribution_date": item.get("distribution_date"),
+                    "status": item.get("status"),
+                    "created_at": item.get("created_at"),
+                    "updated_at": item.get("updated_at"),
+                }
+            )
 
         logger.info(
             "Distributions listed successfully",
             total_count=total_count,
-            returned_count=len(formatted_items)
+            returned_count=len(formatted_items),
         )
 
         return paginated_response(
             items=formatted_items,
             total_count=total_count,
             page=params["page"],
-            page_size=params["page_size"]
+            page_size=params["page_size"],
         )
 
     except SavingGraceError as e:
         logger.error("Failed to list distributions", error=e, error_code=e.error_code)
         return error_response(
-            message=e.message,
-            status_code=e.status_code,
-            error_code=e.error_code,
-            details=e.details
+            message=e.message, status_code=e.status_code, error_code=e.error_code, details=e.details
         )
     except Exception as e:
         logger.error("Unexpected error listing distributions", error=e)
-        return error_response(
-            message="Internal server error",
-            status_code=500
-        )
+        return error_response(message="Internal server error", status_code=500)

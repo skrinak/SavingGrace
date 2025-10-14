@@ -113,8 +113,7 @@ def generate_inventory_export(db: DynamoDBHelper) -> List[Dict[str, Any]]:
         List of inventory records
     """
     response = db.scan(
-        filter_expression=Attr("PK").begins_with("INVENTORY#")
-        & Attr("SK").eq("METADATA")
+        filter_expression=Attr("PK").begins_with("INVENTORY#") & Attr("SK").eq("METADATA")
     )
 
     inventory = []
@@ -167,7 +166,7 @@ def generate_impact_export(
     # Aggregate by month
     from collections import defaultdict
 
-    monthly_impact = defaultdict(
+    monthly_impact: Dict[str, Dict[str, Any]] = defaultdict(
         lambda: {
             "month": "",
             "total_donations": 0,
@@ -181,9 +180,7 @@ def generate_impact_export(
         month = created_at[:7] if created_at else "unknown"  # YYYY-MM
         monthly_impact[month]["month"] = month
         monthly_impact[month]["total_donations"] += 1
-        monthly_impact[month]["total_weight_lbs"] += float(
-            donation.get("total_weight_lbs", 0)
-        )
+        monthly_impact[month]["total_weight_lbs"] += float(donation.get("total_weight_lbs", 0))
 
     for distribution in distributions_response["items"]:
         created_at = distribution.get("created_at", "")

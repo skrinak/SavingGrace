@@ -97,9 +97,7 @@ class DatabaseStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="itemType", type=dynamodb.AttributeType.STRING
             ),  # ITEM
-            sort_key=dynamodb.Attribute(
-                name="expirationDate", type=dynamodb.AttributeType.STRING
-            ),
+            sort_key=dynamodb.Attribute(name="expirationDate", type=dynamodb.AttributeType.STRING),
             projection_type=dynamodb.ProjectionType.ALL,
         )
 
@@ -185,9 +183,7 @@ class DatabaseStack(Stack):
         self.inventory_table.add_global_secondary_index(
             index_name="InventoryByExpiration",
             partition_key=dynamodb.Attribute(name="status", type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(
-                name="expirationDate", type=dynamodb.AttributeType.STRING
-            ),
+            sort_key=dynamodb.Attribute(name="expirationDate", type=dynamodb.AttributeType.STRING),
             projection_type=dynamodb.ProjectionType.ALL,
         )
 
@@ -195,9 +191,7 @@ class DatabaseStack(Stack):
         self.inventory_table.add_global_secondary_index(
             index_name="InventoryByCategory",
             partition_key=dynamodb.Attribute(name="category", type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(
-                name="expirationDate", type=dynamodb.AttributeType.STRING
-            ),
+            sort_key=dynamodb.Attribute(name="expirationDate", type=dynamodb.AttributeType.STRING),
             projection_type=dynamodb.ProjectionType.ALL,
         )
 

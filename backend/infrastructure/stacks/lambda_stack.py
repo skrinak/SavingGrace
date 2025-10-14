@@ -14,6 +14,7 @@ from aws_cdk import (
     CfnOutput,
 )
 from constructs import Construct
+from typing import Any, Dict
 import os
 
 
@@ -32,7 +33,7 @@ class LambdaStack(Stack):
         authorizer: apigateway.CognitoUserPoolsAuthorizer,
         tables: dict,
         receipts_bucket: s3.Bucket,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -48,9 +49,7 @@ class LambdaStack(Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AWSLambdaBasicExecutionRole"
                 ),
-                iam.ManagedPolicy.from_aws_managed_policy_name(
-                    "AWSXRayDaemonWriteAccess"
-                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name("AWSXRayDaemonWriteAccess"),
             ],
         )
 
@@ -157,12 +156,10 @@ class LambdaStack(Stack):
             integration = apigateway.LambdaIntegration(
                 function,
                 proxy=True,
-                integration_responses=[
-                    apigateway.IntegrationResponse(status_code="200")
-                ],
+                integration_responses=[apigateway.IntegrationResponse(status_code="200")],
             )
 
-            method_options = {
+            method_options: Dict[str, Any] = {
                 "method_responses": [apigateway.MethodResponse(status_code="200")],
             }
 
@@ -231,9 +228,7 @@ class LambdaStack(Stack):
             "Create new donation",
             donations_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["donations"], "POST", self.create_donation_fn
-        )
+        integrate_lambda_with_api(api_resources["donations"], "POST", self.create_donation_fn)
 
         self.get_donation_fn = create_lambda_function(
             "GetDonation",
@@ -241,9 +236,7 @@ class LambdaStack(Stack):
             "Get donation by ID",
             donations_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["donation_id"], "GET", self.get_donation_fn
-        )
+        integrate_lambda_with_api(api_resources["donation_id"], "GET", self.get_donation_fn)
 
         self.update_donation_fn = create_lambda_function(
             "UpdateDonation",
@@ -251,9 +244,7 @@ class LambdaStack(Stack):
             "Update donation",
             donations_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["donation_id"], "PUT", self.update_donation_fn
-        )
+        integrate_lambda_with_api(api_resources["donation_id"], "PUT", self.update_donation_fn)
 
         self.list_donations_fn = create_lambda_function(
             "ListDonations",
@@ -261,9 +252,7 @@ class LambdaStack(Stack):
             "List all donations",
             donations_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["donations"], "GET", self.list_donations_fn
-        )
+        integrate_lambda_with_api(api_resources["donations"], "GET", self.list_donations_fn)
 
         self.get_receipt_fn = create_lambda_function(
             "GetReceipt",
@@ -271,9 +260,7 @@ class LambdaStack(Stack):
             "Get donation receipt",
             donations_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["donation_receipt"], "GET", self.get_receipt_fn
-        )
+        integrate_lambda_with_api(api_resources["donation_receipt"], "GET", self.get_receipt_fn)
 
         self.get_expiring_donations_fn = create_lambda_function(
             "GetExpiringDonations",
@@ -296,9 +283,7 @@ class LambdaStack(Stack):
             "Create new recipient",
             recipients_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["recipients"], "POST", self.create_recipient_fn
-        )
+        integrate_lambda_with_api(api_resources["recipients"], "POST", self.create_recipient_fn)
 
         self.get_recipient_fn = create_lambda_function(
             "GetRecipient",
@@ -306,9 +291,7 @@ class LambdaStack(Stack):
             "Get recipient by ID",
             recipients_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["recipient_id"], "GET", self.get_recipient_fn
-        )
+        integrate_lambda_with_api(api_resources["recipient_id"], "GET", self.get_recipient_fn)
 
         self.update_recipient_fn = create_lambda_function(
             "UpdateRecipient",
@@ -316,9 +299,7 @@ class LambdaStack(Stack):
             "Update recipient",
             recipients_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["recipient_id"], "PUT", self.update_recipient_fn
-        )
+        integrate_lambda_with_api(api_resources["recipient_id"], "PUT", self.update_recipient_fn)
 
         self.list_recipients_fn = create_lambda_function(
             "ListRecipients",
@@ -326,9 +307,7 @@ class LambdaStack(Stack):
             "List all recipients",
             recipients_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["recipients"], "GET", self.list_recipients_fn
-        )
+        integrate_lambda_with_api(api_resources["recipients"], "GET", self.list_recipients_fn)
 
         self.get_recipient_history_fn = create_lambda_function(
             "GetRecipientHistory",
@@ -361,9 +340,7 @@ class LambdaStack(Stack):
             "Get distribution by ID",
             distributions_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["distribution_id"], "GET", self.get_distribution_fn
-        )
+        integrate_lambda_with_api(api_resources["distribution_id"], "GET", self.get_distribution_fn)
 
         self.update_distribution_fn = create_lambda_function(
             "UpdateDistribution",
@@ -381,9 +358,7 @@ class LambdaStack(Stack):
             "List all distributions",
             distributions_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["distributions"], "GET", self.list_distributions_fn
-        )
+        integrate_lambda_with_api(api_resources["distributions"], "GET", self.list_distributions_fn)
 
         self.complete_distribution_fn = create_lambda_function(
             "CompleteDistribution",
@@ -421,9 +396,7 @@ class LambdaStack(Stack):
             "List all inventory",
             inventory_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["inventory"], "GET", self.list_inventory_fn
-        )
+        integrate_lambda_with_api(api_resources["inventory"], "GET", self.list_inventory_fn)
 
         self.adjust_inventory_fn = create_lambda_function(
             "AdjustInventory",
@@ -461,9 +434,7 @@ class LambdaStack(Stack):
         self.get_dashboard_fn.add_environment("RECIPIENTS_TABLE_NAME", recipients_table_name)
         self.get_dashboard_fn.add_environment("DISTRIBUTIONS_TABLE_NAME", distributions_table_name)
         self.get_dashboard_fn.add_environment("INVENTORY_TABLE_NAME", inventory_table_name)
-        integrate_lambda_with_api(
-            api_resources["reports_dashboard"], "GET", self.get_dashboard_fn
-        )
+        integrate_lambda_with_api(api_resources["reports_dashboard"], "GET", self.get_dashboard_fn)
 
         self.get_donations_report_fn = create_lambda_function(
             "GetDonationsReport",
@@ -496,10 +467,10 @@ class LambdaStack(Stack):
             donations_table_name,
             timeout_seconds=60,
         )
-        self.get_impact_report_fn.add_environment("DISTRIBUTIONS_TABLE_NAME", distributions_table_name)
-        integrate_lambda_with_api(
-            api_resources["reports_impact"], "GET", self.get_impact_report_fn
+        self.get_impact_report_fn.add_environment(
+            "DISTRIBUTIONS_TABLE_NAME", distributions_table_name
         )
+        integrate_lambda_with_api(api_resources["reports_impact"], "GET", self.get_impact_report_fn)
 
         self.export_report_fn = create_lambda_function(
             "ExportReport",
@@ -511,9 +482,7 @@ class LambdaStack(Stack):
         self.export_report_fn.add_environment("DONATIONS_TABLE_NAME", donations_table_name)
         self.export_report_fn.add_environment("DISTRIBUTIONS_TABLE_NAME", distributions_table_name)
         self.export_report_fn.add_environment("INVENTORY_TABLE_NAME", inventory_table_name)
-        integrate_lambda_with_api(
-            api_resources["reports_export"], "POST", self.export_report_fn
-        )
+        integrate_lambda_with_api(api_resources["reports_export"], "POST", self.export_report_fn)
 
         # =========================================================================
         # USERS LAMBDA FUNCTIONS (5)
@@ -550,9 +519,7 @@ class LambdaStack(Stack):
             "Delete user",
             users_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["user_id"], "DELETE", self.delete_user_fn
-        )
+        integrate_lambda_with_api(api_resources["user_id"], "DELETE", self.delete_user_fn)
 
         self.update_user_role_fn = create_lambda_function(
             "UpdateUserRole",
@@ -560,14 +527,15 @@ class LambdaStack(Stack):
             "Update user role",
             users_table_name,
         )
-        integrate_lambda_with_api(
-            api_resources["user_role"], "PUT", self.update_user_role_fn
-        )
+        integrate_lambda_with_api(api_resources["user_role"], "PUT", self.update_user_role_fn)
 
         # =========================================================================
         # OUTPUTS
         # =========================================================================
         CfnOutput(
-            self, "LambdaFunctionCount", value=str(35), description="Total Lambda functions deployed"
+            self,
+            "LambdaFunctionCount",
+            value=str(35),
+            description="Total Lambda functions deployed",
         )
         CfnOutput(self, "ExportsBucketName", value=exports_bucket.bucket_name)

@@ -73,7 +73,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Count total distributions (PK starts with DISTRIBUTION#)
         try:
             distribution_response = db.scan(
-                filter_expression=Attr("PK").begins_with("DISTRIBUTION#") & Attr("SK").eq("METADATA")
+                filter_expression=Attr("PK").begins_with("DISTRIBUTION#")
+                & Attr("SK").eq("METADATA")
             )
             metrics["total_distributions"] = distribution_response["count"]
         except Exception as e:
@@ -82,9 +83,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Count active recipients (status = active)
         try:
             recipient_response = db.scan(
-                filter_expression=Attr("PK").begins_with("RECIPIENT#") &
-                                Attr("SK").eq("METADATA") &
-                                Attr("status").eq("active")
+                filter_expression=Attr("PK").begins_with("RECIPIENT#")
+                & Attr("SK").eq("METADATA")
+                & Attr("status").eq("active")
             )
             metrics["active_recipients"] = recipient_response["count"]
         except Exception as e:
@@ -93,9 +94,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Count current inventory items (PK starts with INVENTORY#)
         try:
             inventory_response = db.scan(
-                filter_expression=Attr("PK").begins_with("INVENTORY#") &
-                                Attr("SK").eq("METADATA") &
-                                Attr("quantity").gt(0)
+                filter_expression=Attr("PK").begins_with("INVENTORY#")
+                & Attr("SK").eq("METADATA")
+                & Attr("quantity").gt(0)
             )
             metrics["current_inventory_items"] = inventory_response["count"]
         except Exception as e:
@@ -104,9 +105,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Count low stock items (quantity <= reorder_point)
         try:
             low_stock_response = db.scan(
-                filter_expression=Attr("PK").begins_with("INVENTORY#") &
-                                Attr("SK").eq("METADATA") &
-                                Attr("quantity").lte(Attr("reorder_point"))
+                filter_expression=Attr("PK").begins_with("INVENTORY#")
+                & Attr("SK").eq("METADATA")
+                & Attr("quantity").lte(Attr("reorder_point"))
             )
             metrics["low_stock_count"] = low_stock_response["count"]
         except Exception as e:
@@ -115,11 +116,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Count expiring soon items (expiration_date within next 7 days)
         try:
             expiring_response = db.scan(
-                filter_expression=Attr("PK").begins_with("DONATION#") &
-                                Attr("SK").begins_with("ITEM#") &
-                                Attr("expiration_date").lte(seven_days_from_now) &
-                                Attr("expiration_date").gte(now.isoformat()) &
-                                Attr("status").eq("available")
+                filter_expression=Attr("PK").begins_with("DONATION#")
+                & Attr("SK").begins_with("ITEM#")
+                & Attr("expiration_date").lte(seven_days_from_now)
+                & Attr("expiration_date").gte(now.isoformat())
+                & Attr("status").eq("available")
             )
             metrics["expiring_soon_count"] = expiring_response["count"]
         except Exception as e:

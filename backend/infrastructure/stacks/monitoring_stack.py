@@ -53,7 +53,5 @@ class MonitoringStack(Stack):
         # OUTPUTS
         # =========================================================================
         CfnOutput(self, "AdminAlertsTopicArn", value=self.admin_alerts_topic.topic_arn)
-        CfnOutput(
-            self, "ExpirationAlertsTopicArn", value=self.expiration_alerts_topic.topic_arn
-        )
+        CfnOutput(self, "ExpirationAlertsTopicArn", value=self.expiration_alerts_topic.topic_arn)
         CfnOutput(self, "DashboardURL", value=self.dashboard.dashboard_name)
