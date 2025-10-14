@@ -39,6 +39,11 @@ import DistributionListPage from './pages/distributions/DistributionListPage';
 import DistributionFormPage from './pages/distributions/DistributionFormPage';
 import DistributionDetailPage from './pages/distributions/DistributionDetailPage';
 
+// Inventory, Reports, Users
+import InventoryPage from './pages/inventory/InventoryPage';
+import ReportsPage from './pages/reports/ReportsPage';
+import UsersPage from './pages/users/UsersPage';
+
 // Configure AWS Amplify on app initialization
 configureAmplify();
 
@@ -203,10 +208,7 @@ const App: React.FC = () => {
               path="/inventory"
               element={
                 <ProtectedRoute requirePermission="inventory:read">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Inventory</h1>
-                    <p className="mt-2 text-gray-600">Inventory dashboard coming soon</p>
-                  </div>
+                  <InventoryPage />
                 </ProtectedRoute>
               }
             />
@@ -216,10 +218,7 @@ const App: React.FC = () => {
               path="/reports"
               element={
                 <ProtectedRoute requirePermission="reports:read">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Reports</h1>
-                    <p className="mt-2 text-gray-600">Reports and analytics coming soon</p>
-                  </div>
+                  <ReportsPage />
                 </ProtectedRoute>
               }
             />
@@ -229,10 +228,7 @@ const App: React.FC = () => {
               path="/users"
               element={
                 <ProtectedRoute requirePermission="users:read">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">User Management</h1>
-                    <p className="mt-2 text-gray-600">User administration coming soon</p>
-                  </div>
+                  <UsersPage />
                 </ProtectedRoute>
               }
             />
