@@ -34,6 +34,11 @@ import RecipientListPage from './pages/recipients/RecipientListPage';
 import RecipientFormPage from './pages/recipients/RecipientFormPage';
 import RecipientDetailPage from './pages/recipients/RecipientDetailPage';
 
+// Distributions
+import DistributionListPage from './pages/distributions/DistributionListPage';
+import DistributionFormPage from './pages/distributions/DistributionFormPage';
+import DistributionDetailPage from './pages/distributions/DistributionDetailPage';
+
 // Configure AWS Amplify on app initialization
 configureAmplify();
 
@@ -172,10 +177,23 @@ const App: React.FC = () => {
               path="/distributions"
               element={
                 <ProtectedRoute requirePermission="distributions:read">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Distributions</h1>
-                    <p className="mt-2 text-gray-600">Distribution management coming soon</p>
-                  </div>
+                  <DistributionListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/distributions/new"
+              element={
+                <ProtectedRoute requirePermission="distributions:write">
+                  <DistributionFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/distributions/:distributionId"
+              element={
+                <ProtectedRoute requirePermission="distributions:read">
+                  <DistributionDetailPage />
                 </ProtectedRoute>
               }
             />
