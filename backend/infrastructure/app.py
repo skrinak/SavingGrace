@@ -8,6 +8,7 @@ import aws_cdk as cdk
 
 from stacks.database_stack import DatabaseStack
 from stacks.storage_stack import StorageStack
+from stacks.auth_stack import AuthStack
 from stacks.monitoring_stack import MonitoringStack
 
 app = cdk.App()
@@ -39,6 +40,15 @@ storage_stack = StorageStack(
     description=f"SavingGrace S3 storage for {environment}",
 )
 
+# Auth Stack (Cognito User Pool)
+auth_stack = AuthStack(
+    app,
+    f"SavingGrace-Auth-{environment}",
+    env=env_us_west_2,
+    environment=environment,
+    description=f"SavingGrace Cognito authentication for {environment}",
+)
+
 # Monitoring Stack (CloudWatch dashboards, alarms)
 monitoring_stack = MonitoringStack(
     app,
@@ -51,6 +61,7 @@ monitoring_stack = MonitoringStack(
 # Add stack dependencies
 monitoring_stack.add_dependency(database_stack)
 monitoring_stack.add_dependency(storage_stack)
+monitoring_stack.add_dependency(auth_stack)
 
 # Tag all resources
 cdk.Tags.of(app).add("Project", "SavingGrace")
