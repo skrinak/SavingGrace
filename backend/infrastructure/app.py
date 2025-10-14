@@ -9,6 +9,7 @@ import aws_cdk as cdk
 from stacks.database_stack import DatabaseStack
 from stacks.storage_stack import StorageStack
 from stacks.auth_stack import AuthStack
+from stacks.api_stack import ApiStack
 from stacks.monitoring_stack import MonitoringStack
 
 app = cdk.App()
@@ -49,6 +50,16 @@ auth_stack = AuthStack(
     description=f"SavingGrace Cognito authentication for {environment}",
 )
 
+# API Stack (API Gateway with Cognito authorizer)
+api_stack = ApiStack(
+    app,
+    f"SavingGrace-API-{environment}",
+    env=env_us_west_2,
+    environment=environment,
+    user_pool=auth_stack.user_pool,
+    description=f"SavingGrace API Gateway for {environment}",
+)
+
 # Monitoring Stack (CloudWatch dashboards, alarms)
 monitoring_stack = MonitoringStack(
     app,
@@ -59,9 +70,11 @@ monitoring_stack = MonitoringStack(
 )
 
 # Add stack dependencies
+api_stack.add_dependency(auth_stack)
 monitoring_stack.add_dependency(database_stack)
 monitoring_stack.add_dependency(storage_stack)
 monitoring_stack.add_dependency(auth_stack)
+monitoring_stack.add_dependency(api_stack)
 
 # Tag all resources
 cdk.Tags.of(app).add("Project", "SavingGrace")
